@@ -1,0 +1,12 @@
+{
+	"Method": {
+		"Scheme": "centered",
+		"TimeType": "explicit",
+		"TimeOrder": "",
+		"SpaceOrder": "second"
+	},
+	"Misc": {
+		"TimeStep": "",
+		"Iterations": 500
+	}
+}

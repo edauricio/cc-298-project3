@@ -1,7 +1,7 @@
 CC = g++
 DFLAGS = -g
 OBJDIR = ../../obj/
-OBJS = $(OBJDIR)mesh_gen.o $(OBJDIR)aux.o
+OBJS = $(OBJDIR)mesh_gen.o $(OBJDIR)aux.o $(OBJDIR)mesh.o
 IDIR = ../../inc/
 INCS = $(IDIR)Mesh.h $(IDIR)Aux.h
 SRC = ../../src/
@@ -18,6 +18,9 @@ $(OBJDIR)mesh_gen.o: mesh_gen.cpp $(INCS)
 
 $(OBJDIR)aux.o: $(SRC)aux.cpp $(IDIR)Aux.h
 	$(CC) -I$(IDIR) -c $(SRC)aux.cpp -o $@
+
+$(OBJDIR)mesh.o: $(SRC)mesh.cpp $(IDIR)Mesh.h
+	$(CC) -I$(IDIR) -c $(SRC)mesh.cpp -o $@
 
 .PHONY: clean
 clean:

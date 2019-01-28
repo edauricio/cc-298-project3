@@ -1,0 +1,32 @@
+{
+	"InitCond": {
+		"Temp": 270,
+		"Pressure": 1
+	},
+	"BoundaryCond": {
+		"Top": {
+			"Temp": {
+				"type": "Dirichlet",
+				"value": 500
+			}
+		},
+		"Bottom": {
+			"Temp": {
+				"type": "Dirichlet",
+				"value": 100
+			}
+		},
+		"Left": {
+			"Temp": {
+				"type": "Dirichlet",
+				"value": 270
+			}
+		},
+		"Right": {
+			"Temp": {
+				"type": "Dirichlet",
+				"value": 270
+			}
+		}
+	}
+}
