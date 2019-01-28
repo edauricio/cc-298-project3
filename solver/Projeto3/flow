@@ -1,32 +1,10 @@
 {
-	"InitCond": {
-		"Temp": 270,
-		"Pressure": 1
-	},
-	"BoundaryCond": {
-		"Top": {
-			"Temp": {
-				"type": "Dirichlet",
-				"value": 500
-			}
-		},
-		"Bottom": {
-			"Temp": {
-				"type": "Dirichlet",
-				"value": 100
-			}
-		},
-		"Left": {
-			"Temp": {
-				"type": "Dirichlet",
-				"value": 270
-			}
-		},
-		"Right": {
-			"Temp": {
-				"type": "Dirichlet",
-				"value": 270
-			}
-		}
+	"Initial Conditions": {
+		"Gamma": 1.4,
+		"Mach1": 2.9,
+		"Beta1": 29,
+		"Rho1": 1,
+		"P1": 1,
+		"T1": 1
 	}
 }

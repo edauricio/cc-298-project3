@@ -1,26 +1,30 @@
 CC = g++
 DFLAGS = -g
 OBJDIR = ../../obj
-OBJS = $(OBJDIR)/test.o
+OBJS = $(OBJDIR)/p3.o $(OBJDIR)/p3src.o \
+	$(OBJDIR)/mesh.o
 IDIR = ../../inc
-INCS = $(IDIR)/Bulk.h
+INCS = $(IDIR)/Mesh.h $(IDIR)/json.hpp $(IDIR)/p3Header.h
 SRC = ../../src
-EXEC = test
+EXEC = p3
 
-meshgen: fcheck $(OBJS)
+linkage: fcheck $(OBJS)
 	$(CC) -o $(EXEC) $(OBJS)
 
 fcheck:
 	@if ! [ -d "$(OBJDIR)" ]; then mkdir $(OBJDIR); fi
 
-$(OBJDIR)/test.o: test.cpp $(INCS)
-	$(CC) -I$(IDIR) -c test.cpp -o $@
+$(OBJDIR)/p3.o: p3.cpp $(INCS)
+	$(CC) $(DFLAGS) -I$(IDIR) -c p3.cpp -o $@
 
-$(OBJDIR)/aux.o: $(SRC)aux.cpp $(IDIR)Aux.h
-	$(CC) -I$(IDIR) -c $(SRC)/aux.cpp -o $@
+$(OBJDIR)/mesh.o: $(SRC)/mesh.cpp $(IDIR)/Mesh.h
+	$(CC) $(DFLAGS) -I$(IDIR) -c $(SRC)/mesh.cpp -o $@
+
+$(OBJDIR)/p3src.o: $(SRC)/p3src.cpp $(INCS)
+	$(CC) $(DFLAGS) -I$(IDIR) -c $(SRC)/p3src.cpp -o $@
 
 .PHONY: clean
 clean:
 	-rm $(EXEC)
-	-rm $(OBJDIR)*.o
+	-rm $(OBJDIR)/*.o
 	-rm -r $(OBJDIR)
