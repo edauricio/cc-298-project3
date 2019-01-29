@@ -1,0 +1,20 @@
+{
+	"MeshFile": "malha.vtk",
+	"Initial Conditions": {
+		"Gamma": 1.4,
+		"Mach1": 2.9,
+		"Beta1": 29,
+		"P1": 101325,
+		"T1": 15,
+		"Rgas": 287,
+		"InflowDir": 0
+	},
+	"Numerics": {
+		"Scheme": "StegerWarming",
+		"SpatialOrder": "second",
+		"Time": "Explicit",
+		"CFL": 0.1,
+		"IterationMax": 5000,
+		"WriteInterval": 100
+	}
+}

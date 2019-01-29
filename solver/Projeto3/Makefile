@@ -1,7 +1,7 @@
 CC = g++
-DFLAGS = -g
+DFLAGS = -g -O3  
 OBJDIR = ../../obj
-OBJS = $(OBJDIR)/p3.o $(OBJDIR)/p3src.o \
+OBJS = $(OBJDIR)/p3src.o $(OBJDIR)/p3.o \
 	$(OBJDIR)/mesh.o
 IDIR = ../../inc
 INCS = $(IDIR)/Mesh.h $(IDIR)/json.hpp $(IDIR)/p3Header.h
