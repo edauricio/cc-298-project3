@@ -1,22 +1,71 @@
 #ifndef P3HEADER_H
 #define P3HEADER_H
 
-#include <fstream>
-#include "json.hpp"
+#include <string>
+#include <vector>
+#include <cmath>
+#include <initializer_list>
+#include "Mesh.h"
 
-using json = nlohmann::json;
+template <typename T>
+using Vector = std::vector<T>;
 
-double Init(std::string);
+template <typename T>
+using Matrix = std::vector<std::vector<T> >;
+
+double InitFlow(std::string);
+double InitNum(std::string);
+std::string readMesh(std::string);
+double calcT(const Matrix<Vector<double> >&, const size_t, const size_t);
+double calcEigValPlusMinus(const double, const double, const double);
+void setInitialCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
+										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&);
+void updateBoundaryCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
+										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&);
+void calcFluxJ(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
+										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, const size_t, const size_t);
+void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t);
+
+void writeResult(Matrix<Vector<double> >&, Matrix<Vector<double> >&, std::string);
 
 const double PI = 3.141592;
 const double d2r = PI/180, r2d = 180./PI;
 
-const double gama = Init("Gamma"),
-						 M1 = Init("Mach1"),
-						 beta1 = Init("Beta1")*d2r,
-						 rho1 = Init("Rho1"),
-						 p1 = Init("P1"),
-						 T1 = Init("T1");
+const double gama = InitFlow("Gamma"),
+						 M1 = InitFlow("Mach1"),
+						 beta1 = InitFlow("Beta1")*d2r,
+						 p1 = InitFlow("P1"),
+						 T1 = InitFlow("T1"),
+						 Rg = InitFlow("Rgas"),
+						 V1dir = InitFlow("InflowDir"),
+						 rho1 = p1/(Rg*(T1+273)),
+						 a1 = sqrt(gama*p1/rho1),
+						 V1 = M1*a1,
+						 u1 = V1*cos(V1dir*d2r),
+						 v1 = V1*sin(V1dir*d2r),
+						 p0 = p1*pow((1 + ((gama-1)/2)*pow(M1,2)), (gama/(gama-1))),
+						 pref = p0,
+						 T0 = (T1+273)*(1 + ((gama-1)/2)*pow(M1,2)),
+						 Tref = T0,
+						 a0 = sqrt((1 + ((gama-1)/2)*pow(M1,2))*pow(a1,2)),
+						 astar = sqrt((2 / (gama+1))*pow(a0,2)),
+						 uref = astar,
+						 rho_ref = p0/pow(uref,2),
+						 Rref = pow(uref,2)/T0,
+						 Rnon = Rg/Rref,
+
+						 CFL = InitNum("CFL");
+
+const int NMAX = InitNum("IterationMax"),
+					write_int = InitNum("WriteInterval");
+
+inline double calcP(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)));
+}
+
+const Mesh mesh(readMesh("MeshFile"));
+const double dx = mesh.x(1,0) - mesh.x(0,0),
+						 dy = mesh.y(0,1) - mesh.y(0,0);
 
 class ExactSol {
 	public:
