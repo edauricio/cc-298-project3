@@ -11,10 +11,12 @@
 	},
 	"Numerics": {
 		"Scheme": "StegerWarming",
-		"SpatialOrder": "second",
-		"Time": "Explicit",
-		"CFL": 0.1,
-		"IterationMax": 5000,
-		"WriteInterval": 100
+		"SteadyStateSpatialOrder": "first",
+		"Time": "explicit",
+		"TransientSpatialOrder": "fisrt",
+		"CFL": 0.3,
+		"IterationMax": 20000,
+		"WriteInterval": 100,
+		"ConvergenceCriteria": 6
 	}
 }
