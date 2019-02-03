@@ -15,18 +15,20 @@ using Matrix = std::vector<std::vector<T> >;
 
 double InitFlow(std::string);
 double InitNum(std::string);
+std::string InitNumStr(std::string);
 std::string readMesh(std::string);
-double calcT(const Matrix<Vector<double> >&, const size_t, const size_t);
-double calcEigValPlusMinus(const double, const double, const double);
 void setInitialCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&);
 void updateBoundaryCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&);
 void calcFluxJ(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, const size_t, const size_t);
-void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t);
+void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t);
 
 void writeResult(Matrix<Vector<double> >&, Matrix<Vector<double> >&, std::string);
+double calcLinfRes(Matrix<Vector<double> >&, const size_t);
+int checkConvCrash(Matrix<Vector<double> >&);
+void writeResidual(Matrix<Vector<double> >&, const int);
 
 const double PI = 3.141592;
 const double d2r = PI/180, r2d = 180./PI;
@@ -54,13 +56,22 @@ const double gama = InitFlow("Gamma"),
 						 Rref = pow(uref,2)/T0,
 						 Rnon = Rg/Rref,
 
-						 CFL = InitNum("CFL");
+						 CFL = InitNum("CFL"),
+             Conv = InitNum("ConvergenceCriteria");
 
 const int NMAX = InitNum("IterationMax"),
-					write_int = InitNum("WriteInterval");
+					write_int = InitNum("WriteInterval"),
+          ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
+          exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0);
 
 inline double calcP(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
 	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)));
+}
+inline double calcT(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+  return calcP(Q,i,j) / (Q[i][j][0]*Rnon);
+}
+inline double calcEigValPlusMinus(const double Vel, const double c, const int s_s) {
+  return 0.5*((Vel + c) + s_s*std::abs(Vel + c));
 }
 
 const Mesh mesh(readMesh("MeshFile"));

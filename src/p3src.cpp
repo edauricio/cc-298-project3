@@ -10,6 +10,7 @@
 using json = nlohmann::json;
 
 ExactSol exact;
+double norm_cont, norm_xm, norm_ym, norm_en;
 
 double InitFlow(std::string varName) {
 	json Init;
@@ -35,16 +36,12 @@ std::string readMesh(std::string mFile) {
 	return MeshData["MeshFile"];
 }
 
-//inline double calcP(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
-//	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)));
-//}
+std::string InitNumStr(std::string varName) {
+  json Init;
+  std::ifstream infile("config");
+  Init = json::parse(infile);
 
-inline double calcT(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
-	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2))) / (Q[i][j][0]*Rnon);
-}
-
-inline double calcEigValPlusMinus(const double Vel, const double c, const double sign) {
-	return 0.5*((Vel + c) + sign*std::abs(Vel + c));
+  return Init["Numerics"][varName];
 }
 
 void setInitialCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m,
@@ -67,7 +64,7 @@ void updateBoundaryCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p
 
 	// Inflow: Dirichlet. Only set for initial flow; won't change later.
 	if (!cnt) {
-		for (size_t j = 0; j != mesh.ysize(); ++j) {
+		for (size_t j = 0; j != mesh.ysize()-1; ++j) {
 			Q[0][j][0] = rho1/rho_ref;
 			Q[0][j][1] = (rho1*u1)/(rho_ref*uref);
 			Q[0][j][2] = (rho1*v1)/(rho_ref*uref);
@@ -84,7 +81,7 @@ void updateBoundaryCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p
 		V2 = exact.M2()*a2;
 		u2 = V2*cos(V1dir-exact.theta());
 		v2 = V2*sin(V1dir-exact.theta());
-		for (size_t i = 1; i != mesh.xsize()-1; ++i) {
+		for (size_t i = 0; i != mesh.xsize()-1; ++i) {
 			Q[i][mesh.ysize()-1][0] = exact.rho2()/rho_ref;
 			Q[i][mesh.ysize()-1][1] = (exact.rho2()*u2)/(rho_ref*uref);
 			Q[i][mesh.ysize()-1][2] = (exact.rho2()*v2)/(rho_ref*uref);
@@ -111,19 +108,19 @@ void updateBoundaryCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p
 		Q[mesh.xsize()-1][j][1] = Q[mesh.xsize()-2][j][1];
 		Q[mesh.xsize()-1][j][2] = Q[mesh.xsize()-2][j][2];
 		Q[mesh.xsize()-1][j][3] = Q[mesh.xsize()-2][j][3];
+
+    calcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, mesh.xsize()-1, j);
 	}
 }
 
 void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m,
 										Matrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, const size_t i, const size_t j) {
-	static Matrix<double> T(4), T_i(4), P(4), P_i(4), M(4), M_i(4), Diag(4);
+	static Matrix<double> P(4), P_i(4), M(4), M_i(4), Diag(4);
 	static int cnt = 0;
 	double k1, k2, k1t, k2t, c;
 
 	if (!cnt++)
 		for (size_t i = 0; i != 4; ++i) {
-			T[i].resize(4);
-			T_i[i].resize(4);
 			P[i].resize(4);
 			P_i[i].resize(4);
 			M[i].resize(4);
@@ -157,50 +154,66 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
 	M_i[3][2] = -(gama-1)*(Q[i][j][2]/Q[i][j][0]);
 	M_i[3][3] = gama-1;
 
-	P[0][0] = k1t;
-	P[0][1] = k2t;
-	P[0][3] = Q[i][j][0]/(sqrt(2)*c);
-	P[1][2] = k2t;
-	P[1][3] = -k1t/sqrt(2);
-	P[2][2] = -k1t;
-	P[2][3] = -k2t/sqrt(2);
-	P[3][3] = Q[i][j][0]*c/sqrt(2);
+  P[0][0] = k1t;
+  P[0][1] = 0.0;
+  P[0][2] = Q[i][j][0]/(sqrt(2)*c);
+  P[0][3] = Q[i][j][0]/(sqrt(2)*c);
+  P[1][0] = 0.0;
+  P[1][1] = k2t;
+  P[1][2] = k1t/sqrt(2);
+  P[1][3] = -k1t/sqrt(2);
+  P[2][0] = 0.0;
+  P[2][1] = -k1t;
+  P[2][2] = k2t/sqrt(2);
+  P[2][3] = -k2t/sqrt(2);
+  P[3][0] = 0.0;
+  P[3][1] = 0.0;
+  P[3][2] = Q[i][j][0]*c/sqrt(2);
+  P[3][3] = Q[i][j][0]*c/sqrt(2);
 
-	P_i[0][0] = k1t;
-	P_i[0][3] = -k1t/pow(c,2);
-	P_i[1][0] = k2t;
-	P_i[1][3] = -k2t/pow(c,2);
-	P_i[2][1] = k2t;
-	P_i[2][2] = -k1t;
-	P_i[3][1] = -k1t/sqrt(2);
-	P_i[3][2] = -k2t/sqrt(2);
-	P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);	
+  P_i[0][0] = k1t;
+  P_i[0][1] = 0.0;
+  P_i[0][2] = 0.0;
+  P_i[0][3] = -k1t/pow(c,2);
+  P_i[1][0] = 0.0;
+  P_i[1][1] = k2t;
+  P_i[1][2] = -k1t;
+  P_i[1][3] = 0.0;
+  P_i[2][0] = 0.0;
+  P_i[2][1] = k1t/sqrt(2);
+  P_i[2][2] = k2t/sqrt(2);
+  P_i[2][3] = 1./(sqrt(2)*Q[i][j][0]*c);
+  P_i[3][0] = 0.0;
+  P_i[3][1] = -k1t/sqrt(2);
+  P_i[3][2] = -k2t/sqrt(2);
+  P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);
 
 	Diag[0][0] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1);
 	Diag[1][1] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1);
 	Diag[2][2] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1);
 	Diag[3][3] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1.*c, 1);
 
-	A_p[i][j] = P*M*Diag*M_i*P_i;
+	A_p[i][j] = M*(P*Diag*P_i)*M_i;
 
 	Diag[0][0] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1);
 	Diag[1][1] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1);
 	Diag[2][2] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1);
 	Diag[3][3] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1.*c, -1);
 
-	A_m[i][j] = P*M*Diag*M_i*P_i;
+  A_m[i][j] = M*(P*Diag*P_i)*M_i;
 
-	E_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1));
-	E_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(Q[i][j][1]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	E_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(Q[i][j][2]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	E_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(pow(Q[i][j][1]/Q[i][j][0] + c*k1t,2) + pow(Q[i][j][2]/Q[i][j][0] + c*k2t,2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(pow(Q[i][j][1]/Q[i][j][0] - c*k1t, 2) + pow(Q[i][j][2]/Q[i][j][0] - c*k2t,2)) +
-									((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
+  E_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1));
+  E_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+  E_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+  E_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
+
 
 	E_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1));
-	E_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(Q[i][j][1]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	E_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(Q[i][j][2]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	E_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(pow(Q[i][j][1]/Q[i][j][0] + c*k1t,2) + pow(Q[i][j][2]/Q[i][j][0] + c*k2t,2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(pow(Q[i][j][1]/Q[i][j][0] - c*k1t, 2) + pow(Q[i][j][2]/Q[i][j][0] - c*k2t,2)) +
-									((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+  E_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+  E_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+  E_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
 
 	k1 = 0;
 	k2 = 1.0;
@@ -208,54 +221,107 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
 	k2t = 1.0;
 
 	P[0][0] = k1t;
-	P[0][1] = k2t;
-	P[0][3] = Q[i][j][0]/(sqrt(2)*c);
-	P[1][2] = k2t;
-	P[1][3] = -k1t/sqrt(2);
-	P[2][2] = -k1t;
-	P[2][3] = -k2t/sqrt(2);
-	P[3][3] = Q[i][j][0]*c/sqrt(2);
+  P[0][1] = 0.0;
+  P[0][2] = Q[i][j][0]/(sqrt(2)*c);
+  P[0][3] = Q[i][j][0]/(sqrt(2)*c);
+  P[1][0] = 0.0;
+  P[1][1] = k2t;
+  P[1][2] = k1t/sqrt(2);
+  P[1][3] = -k1t/sqrt(2);
+  P[2][0] = 0.0;
+  P[2][1] = -k1t;
+  P[2][2] = k2t/sqrt(2);
+  P[2][3] = -k2t/sqrt(2);
+  P[3][0] = 0.0;
+  P[3][1] = 0.0;
+  P[3][2] = Q[i][j][0]*c/sqrt(2);
+  P[3][3] = Q[i][j][0]*c/sqrt(2);
 
-	P_i[0][0] = k1t;
-	P_i[0][3] = -k1t/pow(c,2);
-	P_i[1][0] = k2t;
-	P_i[1][3] = -k2t/pow(c,2);
-	P_i[2][1] = k2t;
-	P_i[2][2] = -k1t;
-	P_i[3][1] = -k1t/sqrt(2);
-	P_i[3][2] = -k2t/sqrt(2);
-	P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);
+  P_i[0][0] = k1t;
+  P_i[0][1] = 0.0;
+  P_i[0][2] = 0.0;
+  P_i[0][3] = -k1t/pow(c,2);
+  P_i[1][0] = 0.0;
+  P_i[1][1] = k2t;
+  P_i[1][2] = -k1t;
+  P_i[1][3] = 0.0;
+  P_i[2][0] = 0.0;
+  P_i[2][1] = k1t/sqrt(2);
+  P_i[2][2] = k2t/sqrt(2);
+  P_i[2][3] = 1./(sqrt(2)*Q[i][j][0]*c);
+  P_i[3][0] = 0.0;
+  P_i[3][1] = -k1t/sqrt(2);
+  P_i[3][2] = -k2t/sqrt(2);
+  P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);
 
 	Diag[0][0] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1);
 	Diag[1][1] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1);
 	Diag[2][2] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1);
 	Diag[3][3] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1.*c, 1);
 
-	B_p[i][j] = P*M*Diag*M_i*P_i;
+	B_p[i][j] = M*(P*Diag*P_i)*M_i;
 
 	Diag[0][0] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1);
 	Diag[1][1] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1);
 	Diag[2][2] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1);
 	Diag[3][3] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1.*c, -1);
 
-	B_m[i][j] = P*M*Diag*M_i*P_i;
+	B_m[i][j] = M*(P*Diag*P_i)*M_i;
 
 	F_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1));
-	F_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(Q[i][j][1]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	F_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(Q[i][j][2]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	F_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(pow(Q[i][j][1]/Q[i][j][0] + c*k1t,2) + pow(Q[i][j][2]/Q[i][j][0] + c*k2t,2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(pow(Q[i][j][1]/Q[i][j][0] - c*k1t, 2) + pow(Q[i][j][2]/Q[i][j][0] - c*k2t,2)) +
-									((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
+  F_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+  F_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+  F_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
 
-	F_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1));
-	F_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(Q[i][j][1]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	F_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(Q[i][j][2]/Q[i][j][0] + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(Q[i][j][1]/Q[i][j][0] - c*k1t));
-	F_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(pow(Q[i][j][1]/Q[i][j][0] + c*k1t,2) + pow(Q[i][j][2]/Q[i][j][0] + c*k2t,2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(pow(Q[i][j][1]/Q[i][j][0] - c*k1t, 2) + pow(Q[i][j][2]/Q[i][j][0] - c*k2t,2)) +
-									((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+
+  F_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1));
+  F_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+  F_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+  F_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
 
 }
 
-void calcRES(Matrix<Vector<double> > &RES, Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<double> &dt, const size_t i, const size_t j) {
-	RES[i][j] = -dt[i][j]*((E_p[i][j] - E_p[i-1][j]) + (E_m[i+1][j] - E_m[i][j]) + (F_p[i][j] - F_p[i][j-1]) + (F_m[i][j+1] - F_m[i][j]));
+void calcRES(Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<double> &dt, const size_t i, const size_t j) {
+  switch(ss_order) {
+    case 1:
+	   RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+    break;
+
+    case 2:
+      if (i == 1) {
+        if (j == 1) {
+          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        } else if (j == mesh.ysize()-2) {
+          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+        } else {
+          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        }
+      } else if (i == mesh.xsize()-2) {
+        if (j == 1) {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        } else if (j == mesh.ysize()-2) {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+        } else {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        }
+      } else {
+        if (j == 1) {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        } else if (j == mesh.ysize()-2) {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+        } else {
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+        }
+      }
+    break;
+
+    default:
+      std::cout << "Invalid steady-state order. Please double check." << "\n";
+      exit(-1);
+    break;
+  }
 }
 
 double ExactSol::findTheta(double M, double beta) {
@@ -264,16 +330,15 @@ double ExactSol::findTheta(double M, double beta) {
 	double den = (gama+1)*pow(M,2)*pow(sin(beta),2);
 	double lhs = tan(beta-theta);
 	double rhs = num*tan(beta)/den;
-	if (std::abs(lhs-rhs) < 0.00001) {
-		return theta;
-	} else {
-		if ((lhs-rhs) > 0) {
-			theta = theta + (theta/100);
-		} else {
-			theta = theta - (theta/100);
-		}
-		findTheta(M, beta);
-	}
+	if (std::abs(lhs-rhs) > 0.00001) {
+    if ((lhs-rhs) > 0) {
+      theta = theta + (theta/100);
+    } else {
+      theta = theta - (theta/100);
+    }
+    findTheta(M, beta);
+  }
+	return theta;	
 }
 
 double ExactSol::findBeta(double M, double theta) {
@@ -282,16 +347,15 @@ double ExactSol::findBeta(double M, double theta) {
 	double den = (gama+1)*pow(M,2)*pow(sin(beta),2);
 	double lhs = tan(beta-theta)/tan(beta);
 	double rhs = num/den;
-	if (std::abs(lhs - rhs) < 0.00001) {
-		return beta;
-	} else {
-		if ((lhs-rhs) > 0) {
-			beta = beta - (beta/100);
-		} else {
-			beta = beta + (beta/100);
-		}
-		findBeta(M, theta);
-	}
+	if (std::abs(lhs - rhs) > 0.00001) {
+    if ((lhs-rhs) > 0) {
+      beta = beta - (beta/100);
+    } else {
+      beta = beta + (beta/100);
+    }
+    findBeta(M, theta);
+  }
+	return beta;	
 }
 
 double ExactSol::calc_postM(double M, double beta, double theta) {
@@ -493,5 +557,54 @@ void writeResult(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, std::
   	}
   }
   wFile << std::flush;
+  wFile.close();
+}
+
+double calcLinfRes(Matrix<Vector<double> > &RES, const size_t comp) {
+  double max_res = RES[1][1][comp];
+  for (size_t i = 1; i != mesh.xsize()-1; ++i) {
+    for (size_t j = 1; j != mesh.ysize()-1; ++j) {
+      if (std::abs(RES[i][j][comp]) > max_res)
+        max_res = std::abs(RES[i][j][comp]);
+    }
+  }
+  return max_res;
+}
+
+int checkConvCrash(Matrix<Vector<double> > &RES) {
+  if (std::isnan(calcLinfRes(RES,0)) || std::isnan(calcLinfRes(RES,1)) || std::isnan(calcLinfRes(RES,2)) || std::isnan(calcLinfRes(RES,3)) ||
+      std::isinf(calcLinfRes(RES,0)) || std::isinf(calcLinfRes(RES,1)) || std::isinf(calcLinfRes(RES,2)) || std::isinf(calcLinfRes(RES,3)))
+    return -1;
+  else if (max(max(max(calcLinfRes(RES,0)/norm_cont, calcLinfRes(RES,1)/norm_xm), calcLinfRes(RES,2)/norm_ym), calcLinfRes(RES,3)/norm_en) < pow(10, -Conv)) {
+    return 1;
+  }
+
+  return 0;
+}
+
+void writeResidual(Matrix<Vector<double> > &RES, const int n) {
+  static int cnt = 0;
+  std::ofstream wFile;
+  if (!cnt++) {
+    norm_cont = calcLinfRes(RES,0);
+    norm_xm = calcLinfRes(RES,1);
+    norm_ym = calcLinfRes(RES,2);
+    norm_en = calcLinfRes(RES,3);
+    wFile.open("plots/RES.data");
+    if (!wFile.is_open()) {
+      std::cout << "Error opening residual file" << std::endl;
+      exit(-1);
+    }
+    wFile.precision(6);
+    wFile << "#n\tContinuity\tX-Momentum\tY-Momentum\tEnergy\n"
+          << n << "\t\t" << log10(calcLinfRes(RES, 0)/norm_cont) << "\t\t" << log10(calcLinfRes(RES, 1)/norm_xm) << "\t\t" << log10(calcLinfRes(RES, 2)/norm_ym) << "\t\t" << log10(calcLinfRes(RES, 3)/norm_en) << "\n";
+  } else {
+    wFile.open("plots/RES.data", std::ofstream::app);
+    if (!wFile.is_open()) {
+      std::cout << "Error opening residual file" << std::endl;
+      exit(-1);
+    }
+    wFile << n << "\t\t" << log10(calcLinfRes(RES, 0)/norm_cont) << "\t\t" << log10(calcLinfRes(RES, 1)/norm_xm) << "\t\t" << log10(calcLinfRes(RES, 2)/norm_ym) << "\t\t" << log10(calcLinfRes(RES, 3)/norm_en) << "\n";
+  }
   wFile.close();
 }
