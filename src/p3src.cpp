@@ -3,6 +3,7 @@
 #include <iostream>
 #include "p3Header.h"
 #include "Operators.h"
+#include "LinearSysSolvers.h"
 #include "json.hpp"
 //#define MESHDEBUG
 #define NUMDEBUG
@@ -607,4 +608,108 @@ void writeResidual(Matrix<Vector<double> > &RES, const int n) {
     wFile << n << "\t\t" << log10(calcLinfRes(RES, 0)/norm_cont) << "\t\t" << log10(calcLinfRes(RES, 1)/norm_xm) << "\t\t" << log10(calcLinfRes(RES, 2)/norm_ym) << "\t\t" << log10(calcLinfRes(RES, 3)/norm_en) << "\n";
   }
   wFile.close();
+}
+
+void calcSWLU(Matrix<Vector<double> > &dQstar, Matrix<Vector<double> > &dQ, Matrix<Vector<double> > &RES, Matrix<Matrix<double> > &A, Matrix<Matrix<double> > &B, Matrix<double> &dt, const size_t &j, const int &step) {
+  static int cnt = 0;
+  static Matrix<double> I(4);
+
+  //******************************************************************************
+  //******************************************************************************
+  //                                                                             *
+  //VERIFICAR AS DISCRETIZACOES PARA ADICIONAR ADEQUADAMENTE (1/dx) e (1/dy), etc*
+  //                                                                             *
+  //******************************************************************************
+  //******************************************************************************
+
+  if (!cnt++) {
+    for (auto &v : I)
+      v.resize(4);
+
+    for (size_t i = 0; i != 4; ++i) {
+      I[i][i] = 1.0;
+    }
+  }
+
+  switch(imp_treat) {
+    case 1:
+      switch(step) {
+        case 1:
+              if (j == 1) {
+                dQstar[0][j-1] = Gauss((I + dt[1][j]*A[1][j] + dt[1][j]*B[1][j]), RES[1][j]);
+                for (size_t i = 2; i != mesh.xsize()-1; ++i) {
+                  dQstar[i-1][j-1] = Gauss((I + dt[i][j]*A[i][j] + dt[i][j]*B[i][j]), (RES[i][j] + dt[i][j]*A[i-1][j]*dQstar[i-2][j-1]));
+                }
+              } else {
+                dQstar[0][j-1] = Gauss((I + dt[1][j]*A[1][j] + dt[1][j]*B[1][j]), (RES[1][j] + dt[1][j]*B[1][j-1]*dQstar[0][j-2]));
+                for (size_t i = 2; i != mesh.xsize()-1; ++i) {
+                  dQstar[i-1][j-1] = Gauss((I + dt[i][j]*A[i][j] + dt[i][j]*B[i][j]), (RES[i][j] + dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] + dt[i][j]*A[i-1][j]*dQstar[i-2][j-1]));
+                }
+              }
+        break;
+
+        case 2:
+          if (j == mesh.ysize()-2) {
+            dQ[j-1][mesh.xsize()-3] = Gauss((I - dt[mesh.xsize()-2][j]*A[mesh.xsize()-2][j] - dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j]), dQstar[mesh.xsize()-3][j-1]);
+            for (size_t i = mesh.xsize()-2; i-- > 1;) {
+              dQ[j-1][i-1] = Gauss((I - dt[i][j]*A[i][j] - dt[i][j]*B[i][j]), (dQstar[i-1][j-1] - dt[i][j]*A[i+1][j]*dQ[j-1][i]));
+            }
+          } else {
+            dQ[j-1][mesh.xsize()-3] = Gauss((I - dt[mesh.xsize()-2][j]*A[mesh.xsize()-2][j] - dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3]));
+            for (size_t i = mesh.xsize()-2; i-- > 1;) {
+              dQ[j-1][i-1] = Gauss((I - dt[i][j]*A[i][j] - dt[i][j]*B[i][j]), (dQstar[i-1][j-1] - dt[i][j]*A[i+1][j]*dQ[j-1][i] - dt[i][j]*B[i][j+1]*dQ[j][i-1]));
+            }
+          }
+        break;
+      }
+    break;
+
+    case 2:
+      switch(step) {
+        case 1:
+          if (j == 1) {
+            dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), RES[1][j]);
+            dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.0*dt[2][j]*A[1][j]*dQstar[0][j-1]));
+            for (size_t i = 3; i != mesh.xsize()-1; ++i) {
+              dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2)*A[i-2][j]*dQstar[i-3][j-1]));
+            }
+          } else if (j == 2) {
+            dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), (RES[1][j] + 2.*dt[1][j]*B[1][j-1]*dQstar[0][j-2]));
+            dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.*dt[2][j]*B[2][j-1]*dQstar[1][j-2] + 2.0*dt[2][j]*A[1][j]*dQstar[0][j-1]));
+            for (size_t i = 3; i != mesh.xsize()-1; ++i) {
+              dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2.)*A[i-2][j]*dQstar[i-3][j-1]));
+            }
+          } else {
+              dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), (RES[1][j] + 2.*dt[1][j]*B[1][j-1]*dQstar[0][j-2] - (dt[1][j]/2.)*B[1][j-2]*dQstar[0][j-3]));
+              dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.*dt[2][j]*B[2][j-1]*dQstar[1][j-2] - (dt[2][j]/2.)*B[2][j-2]*dQstar[1][j-3] + 2*dt[2][j]*A[1][j]*dQstar[0][j-1]));
+              for (size_t i = 3; i != mesh.xsize()-1; ++i) {
+                dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] - (dt[i][j]/2.)*B[i][j-2]*dQstar[i-1][j-3] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2.)*A[i-2][j]*dQstar[i-3][j-1]));
+              }
+          }
+        break;
+
+        case 2:
+          if (j == mesh.ysize()-2) {
+            dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), dQstar[mesh.xsize()-3][j-1]);
+            dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));
+            for (size_t i = mesh.xsize()-3; i-- > 1;) {
+              dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));
+            }
+          } else if (j == mesh.ysize()-3) {
+              dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - 2*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3]));
+              dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*B[mesh.xsize()-3][j+1]*dQ[j][mesh.xsize()-4] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));
+              for (size_t i = mesh.xsize()-3; i-- > 1;) {
+                dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*B[i][j+1]*dQ[j][i-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));
+              }
+          } else {
+            dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - 2*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3] + (dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j+2]*dQ[j+1][mesh.xsize()-3]));
+            dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*B[mesh.xsize()-3][j+1]*dQ[j][mesh.xsize()-4] + (dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j+2]*dQ[j+1][mesh.xsize()-4] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));
+            for (size_t i = mesh.xsize()-3; i-- > 1;) {
+              dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*B[i][j+1]*dQ[j][i-1] + (dt[i][j]/2.)*B[i][j+2]*dQ[j+1][i-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));
+            }
+          }
+        break;
+      }
+    break;
+  }
 }

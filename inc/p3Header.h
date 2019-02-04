@@ -6,12 +6,13 @@
 #include <cmath>
 #include <initializer_list>
 #include "Mesh.h"
+#include "LinearSysSolvers.h"
 
-template <typename T>
-using Vector = std::vector<T>;
+template <typename P>
+using Vector = std::vector<P>;
 
-template <typename T>
-using Matrix = std::vector<std::vector<T> >;
+template <typename P>
+using Matrix = std::vector<std::vector<P> >;
 
 double InitFlow(std::string);
 double InitNum(std::string);
@@ -29,6 +30,7 @@ void writeResult(Matrix<Vector<double> >&, Matrix<Vector<double> >&, std::string
 double calcLinfRes(Matrix<Vector<double> >&, const size_t);
 int checkConvCrash(Matrix<Vector<double> >&);
 void writeResidual(Matrix<Vector<double> >&, const int);
+void calcSWLU(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<double>&, const size_t&, const int&);
 
 const double PI = 3.141592;
 const double d2r = PI/180, r2d = 180./PI;
@@ -62,7 +64,8 @@ const double gama = InitFlow("Gamma"),
 const int NMAX = InitNum("IterationMax"),
 					write_int = InitNum("WriteInterval"),
           ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
-          exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0);
+          exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0),
+          imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0);
 
 inline double calcP(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
 	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)));
