@@ -287,16 +287,15 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
     break;
 
     case 2:
-      E_p[i][j][0] = (Q[i][j][0]/(4*c))*pow((Q[i][j][1]/Q[i][j][0] + c), 2);
-      E_p[i][j][1] = E_p[i][j][0]*(((gama-1)*(Q[i][j][1]/Q[i][j][0]) + 2*c)/gama);
-      E_p[i][j][2] = E_p[i][j][0]*(Q[i][j][2]/Q[i][j][0]);
-      E_p[i][j][3] = E_p[i][j][0]*(0.5*pow(Q[i][j][2]/Q[i][j][0], 2) + pow(((gama-1)*(Q[i][j][1]/Q[i][j][0]) + 2*c), 2)/(2*(pow(gama,2) - 1)));
+      // E_p = E (pure supersonic flow in u, i.e. Mx > 1)
 
-      E_m[i][j][0] = -1.*(Q[i][j][0]/(4*c))*pow((Q[i][j][1]/Q[i][j][0] - c), 2);
-      E_m[i][j][1] = E_m[i][j][0]*(((gama-1)*(Q[i][j][1]/Q[i][j][0]) - 2*c)/gama);
-      E_m[i][j][2] = E_m[i][j][0]*(Q[i][j][2]/Q[i][j][0]);
-      E_m[i][j][3] = E_m[i][j][0]*(0.5*pow(Q[i][j][2]/Q[i][j][0], 2) + pow(((gama-1)*(Q[i][j][1]/Q[i][j][0]) - 2*c), 2)/(2*(pow(gama,2) - 1)));
+      E_p[i][j][0] = Q[i][j][1];
+      E_p[i][j][1] = pow(Q[i][j][1], 2)/Q[i][j][0] + calcP(Q,i,j);
+      E_p[i][j][2] = Q[i][j][1]*Q[i][j][2]/Q[i][j][0];
+      E_p[i][j][3] = ((calcP(Q,i,j)/(gama-1) + 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0], 2) + pow(Q[i][j][2]/Q[i][j][0], 2))) + calcP(Q,i,j))*(Q[i][j][1]/Q[i][j][0]);
 
+      // E_m = 0 (pure supersonic flow in u, i.e. Mx > 1)
+      //
 
       F_p[i][j][0] = (Q[i][j][0]/(4*c))*pow((Q[i][j][2]/Q[i][j][0] + c), 2);
       F_p[i][j][1] = F_p[i][j][0]*(Q[i][j][1]/Q[i][j][0]);

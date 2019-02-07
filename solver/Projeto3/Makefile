@@ -1,5 +1,5 @@
 CC = g++
-DFLAGS = -g
+DFLAGS = -g -O3
 OBJDIR = ../../obj
 OBJS = $(OBJDIR)/p3.o $(OBJDIR)/p3src.o \
 	$(OBJDIR)/mesh.o $(OBJDIR)/linearsyssolvers.o

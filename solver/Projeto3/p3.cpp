@@ -10,7 +10,6 @@ extern ExactSol exact;
 int main() {
 
   int convCrash = 0;
-  std::cout << method << std::endl;
 
 	// Declaring flow/problem variables
 	Matrix<double> dt(mesh.xsize());

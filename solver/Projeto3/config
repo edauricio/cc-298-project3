@@ -11,12 +11,12 @@
 	},
 	"Numerics": {
 		"Scheme": "vanLeer",
-		"SteadyStateSpatialOrder": "first",
+		"SteadyStateSpatialOrder": "second",
 		"Time": "explicit",
 		"TransientSpatialOrder": "fisrt",
-		"CFL": 0.05,
+		"CFL": 0.2,
 		"IterationMax": 20000,
-		"WriteInterval": 1,
+		"WriteInterval": 100,
 		"ConvergenceCriteria": 6
 	}
 }
