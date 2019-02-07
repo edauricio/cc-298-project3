@@ -63,6 +63,7 @@ const double gama = InitFlow("Gamma"),
 
 const int NMAX = InitNum("IterationMax"),
 					write_int = InitNum("WriteInterval"),
+          method = (InitNumStr("Scheme") == "StegerWarming") ? 1 : ((InitNumStr("Scheme") == "vanLeer") ? 2 : ((InitNumStr("Scheme") == "Liou") ? 3 : 0)),
           ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
           exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0),
           imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0);

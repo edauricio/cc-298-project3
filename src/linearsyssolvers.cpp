@@ -13,8 +13,7 @@
  * Of course, A must be a square matrix, and f dimensions must be consistent with A (i.e. n).
  * If matrix A is not tridiagonal, it solves the system using Gauss(...) method instead.
  * */
-template <typename T>
-std::vector<T> Trid(const std::vector<std::vector<T> > &A, const std::vector<T> &f) {
+std::vector<double> Trid(const std::vector<std::vector<double> > &A, const std::vector<double> &f) {
   const size_t n = f.size();
   if (A[0].size() != 3) {
     std::cout << "The system is not tridiagonal or coefficient matrix is not in compact form. Exiting. . ." << std::endl;
@@ -24,7 +23,7 @@ std::vector<T> Trid(const std::vector<std::vector<T> > &A, const std::vector<T> 
     exit(-1);
   }
 
-  std::vector<T> alfa(n), gama(n), g(n), x(n);
+  std::vector<double> alfa(n), gama(n), g(n), x(n);
 
   //Constructing diagonals alfa and gama, and solving for the intermediate solution Lg = f
   alfa[0] = A[0][1];
@@ -65,8 +64,7 @@ std::vector<T> Trid(const std::vector<std::vector<T> > &A, const std::vector<T> 
  * Mathematical problems in engineering, volume 2015, Article ID 232456.
  * http://dx.doi.org/10.1155/2015/232456
  */
-template <typename T>
-std::vector<T> Penta(const std::vector<std::vector<T> > &A, const std::vector<T> &f) {
+std::vector<double> Penta(const std::vector<std::vector<double> > &A, const std::vector<double> &f) {
 	if (A[0].size() != 5) {
 		cout << "The system is not pentadiagonal or coefficient matrix is in invalid form. Exiting. . ." << endl;
 		exit(-1);
@@ -75,8 +73,8 @@ std::vector<T> Penta(const std::vector<std::vector<T> > &A, const std::vector<T>
 		exit(-1);
 	}
 	const size_t n = f.size();
-	std::vector<T> alfa(n), beta(n), gama(n), mi(n), z(n);
-	std::vector<T> x(n);
+	std::vector<double> alfa(n), beta(n), gama(n), mi(n), z(n);
+	std::vector<double> x(n);
 
 	// P/ i = 1;
 	mi[0] = A[0][2];
@@ -127,8 +125,7 @@ std::vector<T> Penta(const std::vector<std::vector<T> > &A, const std::vector<T>
  * Arguments are matrix A and vector f. Return solution vector x.
  * Of course, A must be a square matrix, and f dimensions must be consistent with A (i.e. n).
  * */
-template <typename T>
-std::vector<T> Gauss(const std::vector<std::vector<T> > &A, const std::vector<T> &f) {
+std::vector<double> Gauss(const std::vector<std::vector<double> > &A, const std::vector<double> &f) {
   if (A[0].size() != A.size()) {
     std::cout << "Matrix is not square. Exiting. . ." << std::endl;
     exit(-1);
@@ -138,9 +135,9 @@ std::vector<T> Gauss(const std::vector<std::vector<T> > &A, const std::vector<T>
   }
   const size_t n = f.size();
 
-  std::vector<std::vector<std::vector<T> > > U(n);
-  std::vector<std::vector<T> > g(n);
-  std::vector<T> x(n);
+  std::vector<std::vector<std::vector<double> > > U(n);
+  std::vector<std::vector<double> > g(n);
+  std::vector<double> x(n);
   
   // Initialization
   for (size_t k = 0; k != n; k++) {
@@ -196,14 +193,13 @@ std::vector<T> Gauss(const std::vector<std::vector<T> > &A, const std::vector<T>
  * the n elements of the diagonal above main diagonal, C, and size of system n.
  * Returns solution vector x, where each element of x is a vector of size m.
  * */
-template <typename T>
-std::vector<std::vector<T> > Block(const std::vector<std::vector<std::vector<T> > > &A, const std::vector<std::vector<std::vector<T> > > &B, const std::vector<std::vector<std::vector<T> > > &C, const std::vector<std::vector<T> > &f) {
+std::vector<std::vector<double> > Block(const std::vector<std::vector<std::vector<double> > > &A, const std::vector<std::vector<std::vector<double> > > &B, const std::vector<std::vector<std::vector<double> > > &C, const std::vector<std::vector<double> > &f) {
   const size_t n = A.size();
   const size_t m = A[0].size();
 
-  std::vector<std::vector<std::vector<T> > > AL(n), gama(n);
-  std::vector<std::vector<T> > x(n), y(n);
-  std::vector<T> auxc(m);
+  std::vector<std::vector<std::vector<double> > > AL(n), gama(n);
+  std::vector<std::vector<double> > x(n), y(n);
+  std::vector<double> auxc(m);
   
   //Initializing matrices Aem and gama, and soluion vector x
   for (auto k = 0; k != n; ++k) {

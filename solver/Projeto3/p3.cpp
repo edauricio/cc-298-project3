@@ -9,8 +9,9 @@ extern ExactSol exact;
 
 int main() {
 
-  int convCrash;
-  
+  int convCrash = 0;
+  std::cout << method << std::endl;
+
 	// Declaring flow/problem variables
 	Matrix<double> dt(mesh.xsize());
 	for (size_t i = 0; i != mesh.xsize(); ++i) {
@@ -136,7 +137,6 @@ int main() {
     break;
 
     case 1:
-    std::cout << "LU" << std::endl;
       for (int n = 1; n != NMAX+1; ++n) {
 
         // Step 1: Residual calc and solution of lower triangular matrix
@@ -149,7 +149,7 @@ int main() {
           calcSWLU(dQstar, dQ, RES, A_p, B_p, dt, j, 1);
         }
 
-        // Step 2: Solution of upper triangular matrix (dQ_ calc)
+        // Step 2: Solution of upper triangular matrix (dQ calc)
         for (size_t j = mesh.ysize()-1; j-- > 1 ;) {
           calcSWLU(dQstar, dQ, RES, A_m, B_m, dt, j, 2);
         }

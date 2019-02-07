@@ -10,13 +10,13 @@
 		"InflowDir": 0
 	},
 	"Numerics": {
-		"Scheme": "StegerWarming",
+		"Scheme": "vanLeer",
 		"SteadyStateSpatialOrder": "first",
 		"Time": "explicit",
 		"TransientSpatialOrder": "fisrt",
-		"CFL": 0.3,
+		"CFL": 0.05,
 		"IterationMax": 20000,
-		"WriteInterval": 100,
+		"WriteInterval": 1,
 		"ConvergenceCriteria": 6
 	}
 }

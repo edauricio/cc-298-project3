@@ -3,16 +3,12 @@
 
 #include <vector>
 
-template <typename T>
-std::vector<T> Trid(const std::vector<std::vector<T> > &, const std::vector<T> &);
+std::vector<double> Trid(const std::vector<std::vector<double> > &, const std::vector<double> &);
 
-template <typename T>
-std::vector<T> Penta(const std::vector<std::vector<T> > &, const std::vector<T> &);
+std::vector<double> Penta(const std::vector<std::vector<double> > &, const std::vector<double> &);
 
-template <typename T>
-std::vector<T> Gauss(const std::vector<std::vector<T> > &, const std::vector<T> &);
+std::vector<double> Gauss(const std::vector<std::vector<double> > &, const std::vector<double> &);
 
-template <typename T>
-std::vector<std::vector<T> > Block(const std::vector<std::vector<std::vector<T> > >&, const std::vector<std::vector<std::vector<T> > >&, const std::vector<std::vector<std::vector<T> > >&, const std::vector<std::vector<T> >&);
+std::vector<std::vector<double> > Block(const std::vector<std::vector<std::vector<double> > >&, const std::vector<std::vector<std::vector<double> > >&, const std::vector<std::vector<std::vector<double> > >&, const std::vector<std::vector<double> >&);
 
 #endif
