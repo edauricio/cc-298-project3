@@ -89,7 +89,7 @@ int main() {
     			for (size_t j = 1; j != mesh.ysize()-1; ++j) {
     				dt[i][j] = (CFL*dx) / (Q[i][j][1]/Q[i][j][0] + sqrt(gama*calcP(Q,i,j)/Q[i][j][0]));
 
-    				calcRES(RES, E_p, E_m, F_p, F_m, dt, i, j);
+    				calcRES(Q, RES, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, dt, i, j);
     			}
     		}
 
@@ -143,7 +143,7 @@ int main() {
           for (size_t i = 1; i != mesh.xsize()-1; ++i) {
             dt[i][j] = (CFL*dx) / (Q[i][j][1]/Q[i][j][0] + sqrt(gama*calcP(Q,i,j)/Q[i][j][0]));
 
-            calcRES(RES, E_p, E_m, F_p, F_m, dt, i, j);
+            calcRES(Q, RES, E_p, E_m, F_p, F_m, A_m, A_p, B_m, B_p, dt, i, j);
           }
           calcSWLU(dQstar, dQ, RES, A_p, B_p, dt, j, 1);
         }

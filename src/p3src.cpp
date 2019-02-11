@@ -315,42 +315,164 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
 
 }
 
-void calcRES(Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<double> &dt, const size_t i, const size_t j) {
-  switch(ss_order) {
+std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const int direction, const int LR) {
+  double aface, mface_p, mface_m, pface;
+  std::vector<double> ConvFlux_L(4), ConvFlux_R(4), PFlux(4);
+
+  switch(direction) {
     case 1:
-	   RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+      switch(LR) {
+        case 1:
+          ConvFlux_L[0] = Q[i][j][0];
+          ConvFlux_L[1] = Q[i][j][1];
+          ConvFlux_L[2] = Q[i][j][2];
+          ConvFlux_L[3] = Q[i][j][3] + calcP(Q,i,j);
+
+          ConvFlux_R[0] = Q[i+1][j][0];
+          ConvFlux_R[1] = Q[i+1][j][1];
+          ConvFlux_R[2] = Q[i+1][j][2];
+          ConvFlux_R[3] = Q[i+1][j][3] + calcP(Q,i+1,j);
+
+          aface = std::min(calcaTildeE(Q, i, j), calcaTildeE(Q, i+1, j));
+          mface_p = 0.5*(calcmFaceE(Q, aface, i, j) + std::abs(calcmFaceE(Q, aface, i, j)));
+          mface_m = 0.5*(calcmFaceE(Q, aface, i, j) - std::abs(calcmFaceE(Q, aface, i, j)));
+          pface = calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1)*calcP(Q, i+1, j);
+
+          PFlux[1] = pface;
+
+          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
+        break;
+
+        case -1:
+        //VERIFICAR FLUXOS A PARTIR DAQUI
+          ConvFlux_L[0] = Q[i-1][j][0];
+          ConvFlux_L[1] = Q[i-1][j][1];
+          ConvFlux_L[2] = Q[i-1][j][2];
+          ConvFlux_L[3] = Q[i-1][j][3] + calcP(Q,i-1,j);
+
+          ConvFlux_R[0] = Q[i][j][0];
+          ConvFlux_R[1] = Q[i][j][1];
+          ConvFlux_R[2] = Q[i][j][2];
+          ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);
+
+          aface = std::min(calcaTildeE(Q, i-1, j), calcaTildeE(Q, i, j));
+          mface_p = 0.5*(calcmFaceE(Q, aface, i-1, j) + std::abs(calcmFaceE(Q, aface, i-1, j)));
+          mface_m = 0.5*(calcmFaceE(Q, aface, i-1, j) - std::abs(calcmFaceE(Q, aface, i-1, j)));
+          pface = calcPStyle((Q[i-1][j][1]/Q[i-1][j][0])/aface, 1)*calcP(Q, i-1, j) + calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);
+
+          PFlux[1] = pface;
+
+          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
+
+        break;
+      }
     break;
 
     case 2:
-      if (i == 1) {
-        if (j == 1) {
-          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        } else if (j == mesh.ysize()-2) {
-          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
-        } else {
-          RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        }
-      } else if (i == mesh.xsize()-2) {
-        if (j == 1) {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        } else if (j == mesh.ysize()-2) {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
-        } else {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        }
-      } else {
-        if (j == 1) {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        } else if (j == mesh.ysize()-2) {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
-        } else {
-          RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
-        }
+      switch(LR) {
+        case 1:
+          ConvFlux_L[0] = Q[i][j][0];
+          ConvFlux_L[1] = Q[i][j][1];
+          ConvFlux_L[2] = Q[i][j][2];
+          ConvFlux_L[3] = Q[i][j][3] + calcP(Q,i,j);
+
+          ConvFlux_R[0] = Q[i][j+1][0];
+          ConvFlux_R[1] = Q[i][j+1][1];
+          ConvFlux_R[2] = Q[i][j+1][2];
+          ConvFlux_R[3] = Q[i][j+1][3] + calcP(Q,i,j+1);
+
+          aface = std::min(calcaTildeF(Q, i, j), calcaTildeF(Q, i, j+1));
+          mface_p = 0.5*(calcmFaceF(Q, aface, i, j) + std::abs(calcmFaceF(Q, aface, i, j)));
+          mface_m = 0.5*(calcmFaceF(Q, aface, i, j) - std::abs(calcmFaceF(Q, aface, i, j)));
+          pface = calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i][j+1][2]/Q[i][j+1][0])/aface, -1)*calcP(Q, i, j+1);
+
+          PFlux[2] = pface;
+
+          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
+        break;
+
+        case -1:
+          ConvFlux_L[0] = Q[i][j-1][0];
+          ConvFlux_L[1] = Q[i][j-1][1];
+          ConvFlux_L[2] = Q[i][j-1][2];
+          ConvFlux_L[3] = Q[i][j-1][3] + calcP(Q,i,j-1);
+
+          ConvFlux_R[0] = Q[i][j][0];
+          ConvFlux_R[1] = Q[i][j][1];
+          ConvFlux_R[2] = Q[i][j][2];
+          ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);
+
+          aface = std::min(calcaTildeF(Q, i, j-1), calcaTildeF(Q, i, j));
+          mface_p = 0.5*(calcmFaceF(Q, aface, i, j-1) + std::abs(calcmFaceF(Q, aface, i, j-1)));
+          mface_m = 0.5*(calcmFaceF(Q, aface, i, j-1) - std::abs(calcmFaceF(Q, aface, i, j-1)));
+          pface = calcPStyle((Q[i][j-1][2]/Q[i][j-1][0])/aface, 1)*calcP(Q, i, j-1) + calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);
+
+          PFlux[2] = pface;
+
+          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
+        break;
+      }
+    break;
+  }
+  return ConvFlux_L;
+}
+
+
+void calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, Matrix<double> &dt, const size_t i, const size_t j) {
+  switch(ss_order) {
+    case 1:
+      switch(method) {
+        case 1:
+        case 2:
+	        RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+        break;
+
+        case 3:
+          RES[i][j] = -dt[i][j]*((1./dx)*(calcNumFlux(Q, i, j, 1, 1) - calcNumFlux(Q, i, j, 1, -1)) + (1./dy)*(calcNumFlux(Q, i, j, 2, 1) - calcNumFlux(Q, i, j, 2, -1)));
+        break;
+      }
+    break;
+
+    case 2:
+      switch(method) {
+        case 1:
+        case 2:
+          if (i == 1) {
+            if (j == 1) {
+              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            } else if (j == mesh.ysize()-2) {
+              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+            } else {
+              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            }
+          } else if (i == mesh.xsize()-2) {
+            if (j == 1) {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            } else if (j == mesh.ysize()-2) {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+            } else {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            }
+          } else {
+            if (j == 1) {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            } else if (j == mesh.ysize()-2) {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));
+            } else {
+              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));
+            }
+          }
+        break;
+
+        case 3:
+          std::cout << "Second-order AUSM+ is not implemented. Please change method or order." << std::endl;
+          exit(-1);
+        break;
       }
     break;
 
     default:
-      std::cout << "Invalid steady-state order. Please double check." << "\n";
+      std::cout << "Invalid steady-state order. Please double check." << std::endl;
       exit(-1);
     break;
   }
@@ -432,10 +554,10 @@ void ExactSol::calc_all() {
 }
 
 void writeResult(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, std::string fName) {
-	ofstream wFile;
+	std::ofstream wFile;
   wFile.open(fName);
   wFile.precision(6);
-  wFile << scientific;
+  wFile << std::scientific;
   wFile << "# vtk DataFile Version 3.0" << "\n"
         << "Resultado Projeto 3" << "\n"
         << "ASCII" << "\n"
@@ -607,7 +729,7 @@ int checkConvCrash(Matrix<Vector<double> > &RES) {
   if (std::isnan(calcLinfRes(RES,0)) || std::isnan(calcLinfRes(RES,1)) || std::isnan(calcLinfRes(RES,2)) || std::isnan(calcLinfRes(RES,3)) ||
       std::isinf(calcLinfRes(RES,0)) || std::isinf(calcLinfRes(RES,1)) || std::isinf(calcLinfRes(RES,2)) || std::isinf(calcLinfRes(RES,3)))
     return -1;
-  else if (max(max(max(calcLinfRes(RES,0)/norm_cont, calcLinfRes(RES,1)/norm_xm), calcLinfRes(RES,2)/norm_ym), calcLinfRes(RES,3)/norm_en) < pow(10, -Conv))
+  else if (std::max(std::max(std::max(calcLinfRes(RES,0)/norm_cont, calcLinfRes(RES,1)/norm_xm), calcLinfRes(RES,2)/norm_ym), calcLinfRes(RES,3)/norm_en) < pow(10, -Conv))
     return 1;
 
   return 0;

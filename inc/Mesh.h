@@ -7,15 +7,13 @@
 #include <cstdlib>
 #include <cctype>
 
-using namespace std;
-
 class Mesh {
   public:
-  	typedef vector<double>::size_type mesh_index;
-  	Mesh(string fName) { read(fName); metrics(); }
-  	Mesh(string fName, string syscoord) : coord(syscoord) { for (auto &c : coord) c = toupper(c); read(fName); metrics(); };
+  	typedef std::vector<double>::size_type mesh_index;
+  	Mesh(std::string fName) { read(fName); metrics(); }
+  	Mesh(std::string fName, std::string syscoord) : coord(syscoord) { for (auto &c : coord) c = toupper(c); read(fName); metrics(); };
     explicit Mesh(mesh_index x_length = 1, mesh_index y_length = 1, mesh_index z_length = 1) : IMAX(x_length), JMAX(y_length), KMAX(z_length) { sizing(); } ;
-    const Mesh &write(string, string = "NO", string = "Mesh") const;
+    const Mesh &write(std::string, std::string = "NO", std::string = "Mesh") const;
     mesh_index xsize() const { return IMAX; };
     mesh_index ysize() const { return JMAX; };
     mesh_index zsize() const { return KMAX; };
@@ -32,7 +30,7 @@ class Mesh {
     double zeta_y(mesh_index i, mesh_index j = 0, mesh_index k = 0) const { return ZETA_Y[i][j][k]; };
     double zeta_z(mesh_index i, mesh_index j = 0, mesh_index k = 0) const { return ZETA_Z[i][j][k]; };
     double J(mesh_index i, mesh_index j = 0, mesh_index k = 0) const { return Jacob[i][j][k]; };
-    string coord_sys() const { return coord; };
+    std::string coord_sys() const { return coord; };
     void calc_metrics() { metrics(); };
 
     double &set_x(mesh_index i, mesh_index j = 0, mesh_index k = 0) { return X[i][j][k]; };
@@ -40,12 +38,12 @@ class Mesh {
     double &set_z(mesh_index i, mesh_index j = 0, mesh_index k = 0) { return Z[i][j][k]; };
   private:
   	mesh_index IMAX, JMAX, KMAX;
-    vector<vector<vector<double> > > X, Y, Z, XI_X, XI_Y, XI_Z, ETA_X, ETA_Y, ETA_Z, ZETA_X, ZETA_Y, ZETA_Z, Jacob;
-    string coord = "CARTESIAN";
+    std::vector<std::vector<std::vector<double> > > X, Y, Z, XI_X, XI_Y, XI_Z, ETA_X, ETA_Y, ETA_Z, ZETA_X, ZETA_Y, ZETA_Z, Jacob;
+    std::string coord = "CARTESIAN";
 
     void sizing();
     void metrics();
-    Mesh &read(string);
+    Mesh &read(std::string);
 };
 
 class Boundary {

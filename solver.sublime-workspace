@@ -40,118 +40,55 @@
 	"buffers":
 	[
 		{
-			"file": "solver/Projeto3/test.cpp",
+			"file": "solver/Projeto3/p3.cpp",
 			"settings":
 			{
-				"buffer_size": 312,
+				"buffer_size": 6577,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "solver/Projeto3/numerics",
+			"file": "solver/Projeto3/config",
 			"settings":
 			{
-				"buffer_size": 166,
+				"buffer_size": 388,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "solver/Projeto3/flow",
+			"file": "inc/Operators.h",
 			"settings":
 			{
-				"buffer_size": 385,
+				"buffer_size": 6874,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "inc/test.cpp",
+			"file": "inc/p3Header.h",
 			"settings":
 			{
-				"buffer_size": 252,
+				"buffer_size": 6645,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "solver/Projeto3/aa.cpp",
+			"file": "src/p3src.cpp",
 			"settings":
 			{
-				"buffer_size": 204,
+				"buffer_size": 40364,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/mesh.cpp",
+			"file": "/home/eron/workspace/c++/cc-298-project2/aux.h",
 			"settings":
 			{
-				"buffer_size": 10385,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "inc/Mesh.h",
-			"settings":
-			{
-				"buffer_size": 3244,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/flowSolver.cpp",
-			"settings":
-			{
-				"buffer_size": 7874,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "inc/FlowSolver.h",
-			"settings":
-			{
-				"buffer_size": 505,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "inc/MecFlu.h",
-			"settings":
-			{
-				"buffer_size": 2850,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/mecflu.cpp",
-			"settings":
-			{
-				"buffer_size": 968,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "inc/Numerics.h",
-			"settings":
-			{
-				"buffer_size": 607,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/numerics.cpp",
-			"settings":
-			{
-				"buffer_size": 544,
-				"encoding": "UTF-8",
+				"buffer_size": 10060,
 				"line_ending": "Unix"
 			}
 		}
@@ -231,15 +168,29 @@
 	],
 	"file_history":
 	[
-		"/home/eron/workspace/c++/SolverProject/inc/Aux.h",
-		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/numerics",
-		"/home/eron/workspace/c++/SolverProject/inc/json.hpp",
-		"/home/eron/workspace/c++/SolverProject/inc/Numerics.h",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolvers.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/LinearSysSolvers.h",
+		"/home/eron/workspace/c++/SolverProject/src/mesh.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/Mesh.h",
+		"/home/eron/workspace/c++/cc-298-project2/fvc.h",
+		"/home/eron/workspace/c++/cc-298-project2/p-s.cpp",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolver.cpp",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolver\\.cpp",
+		"/home/eron/workspace/c++/cc-298-project2/aux.h",
+		"/home/eron/workspace/c++/SolverProject/src/p3src.cpp",
 		"/home/eron/workspace/c++/SolverProject/src/numerics.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/Numerics.h",
+		"/home/eron/workspace/c++/SolverProject/src/mecflu.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/MecFlu.h",
 		"/home/eron/workspace/c++/SolverProject/inc/FlowSolver.h",
 		"/home/eron/workspace/c++/SolverProject/src/flowSolver.cpp",
-		"/home/eron/workspace/c++/SolverProject/inc/Mesh.h",
-		"/home/eron/workspace/c++/SolverProject/src/mesh.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/aa.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/test.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/flow",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/test.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/numerics",
+		"/home/eron/workspace/c++/SolverProject/inc/Aux.h",
+		"/home/eron/workspace/c++/SolverProject/inc/json.hpp",
 		"/home/eron/workspace/c++/SolverProject/inc/numerics.json",
 		"/home/eron/workspace/c++/SolverProject/inc/numerics",
 		"/home/eron/workspace/c++/SolverProject/inc/Bulk.h",
@@ -247,14 +198,11 @@
 		"/home/eron/workspace/c++/SolverProject/solver.sublime-project",
 		"/home/eron/workspace/c++/SolverProject/mesh_gen.cpp",
 		"/home/eron/workspace/c++/SolverProject/Mesh.h",
-		"/home/eron/workspace/c++/cc-298-project2/aux.h",
 		"/home/eron/workspace/c++/cc-298-project2/wall_time.h",
-		"/home/eron/workspace/c++/cc-298-project2/fvc.h",
 		"/home/eron/workspace/c++/cc-298-project2/preproc.h",
 		"/home/eron/workspace/c++/cc-298-project2/dd.h",
 		"/home/eron/workspace/c++/cc-298-project2/lss.h",
 		"/home/eron/workspace/c++/cc-298-project2/param.cfg",
-		"/home/eron/workspace/c++/cc-298-project2/p-s.cpp",
 		"/home/eron/.config/sublime-text-3/Packages/PackageResourceViewer/README.md",
 		"/home/eron/.config/sublime-text-3/Packages/Theme - Default/Default.sublime-theme",
 		"/home/eron/.config/sublime-text-3/Packages/Theme - Default/Widget - Default.hidden-color-scheme",
@@ -275,7 +223,7 @@
 	],
 	"find":
 	{
-		"height": 24.0
+		"height": 38.0
 	},
 	"find_in_files":
 	{
@@ -289,6 +237,40 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"ref",
+			"max",
+			"scientific",
+			"ofstream",
+			"endl",
+			"cout",
+			"endl",
+			"cout",
+			"vector <",
+			"vector<",
+			"max(",
+			"scientific",
+			"endl",
+			"endll",
+			"end",
+			"cout",
+			"string",
+			"ofstream",
+			"ifstream",
+			"vector<",
+			"T>",
+			"vector<T>",
+			"JMAX",
+			"IMAX",
+			"vector<",
+			"B_hat[",
+			"A_hat[",
+			"dQ_[",
+			"Q[",
+			"<P>",
+			"(2*dx)",
+			"calcEigValPlusMinus(Q[i][j][1]",
+			"std::cout",
+			"Rnon",
 			"ifst",
 			"FullLHS",
 			"T",
@@ -301,6 +283,35 @@
 		"regex": false,
 		"replace_history":
 		[
+			"std::max",
+			"std::scientific",
+			"std::ofstream",
+			"std::endl",
+			"std::cout",
+			"std::endl",
+			"std::cout",
+			"std::vector<",
+			"std::max(",
+			"std::scientific",
+			"std::endl",
+			"endl",
+			"std::endl",
+			"std::cout",
+			"std::string",
+			"std::ofstream",
+			"std::ifstream",
+			"std::vector<",
+			"double>",
+			"vector<double>",
+			"mesh.ysize()",
+			"mesh.xsize()",
+			"std::vector<",
+			"B[",
+			"A[",
+			"dQ[",
+			"<double>",
+			"(dx*dx)",
+			"calcEigValPlusMinus(Q[i][j][2]",
 			"FullRHS"
 		],
 		"reverse": false,
@@ -317,19 +328,19 @@
 			[
 				{
 					"buffer": 0,
-					"file": "solver/Projeto3/test.cpp",
+					"file": "solver/Projeto3/p3.cpp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 312,
+						"buffer_size": 6577,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								310,
-								310
+								2142,
+								2142
 							]
 						],
 						"settings":
@@ -338,7 +349,7 @@
 							"syntax": "Packages/C++/C++.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 495.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -346,48 +357,19 @@
 				},
 				{
 					"buffer": 1,
-					"file": "solver/Projeto3/numerics",
+					"file": "solver/Projeto3/config",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 166,
+						"buffer_size": 388,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								112,
-								112
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 2,
-					"file": "solver/Projeto3/flow",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 385,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								117,
-								117
+								355,
+								355
 							]
 						],
 						"settings":
@@ -400,24 +382,24 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 3,
-					"file": "inc/test.cpp",
+					"buffer": 2,
+					"file": "inc/Operators.h",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 252,
+						"buffer_size": 6874,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								59,
-								59
+								79,
+								79
 							]
 						],
 						"settings":
@@ -429,51 +411,82 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 12,
-					"type": "text"
-				},
-				{
-					"buffer": 4,
-					"file": "solver/Projeto3/aa.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 204,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								153,
-								153
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 11,
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
 		},
 		{
-			"selected": 2,
+			"selected": 1,
 			"sheets":
 			[
 				{
-					"buffer": 5,
-					"file": "src/mesh.cpp",
+					"buffer": 3,
+					"file": "inc/p3Header.h",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10385,
+						"buffer_size": 6645,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5551,
+								5551
+							]
+						],
+						"settings":
+						{
+							"apply_syntax_touched": true,
+							"history_list_is_closing": true,
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 360.0,
+						"translation.y": 990.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/p3src.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 40364,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								16545,
+								16545
+							]
+						],
+						"settings":
+						{
+							"apply_syntax_touched": true,
+							"history_list_is_closing": true,
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 4793.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/home/eron/workspace/c++/cc-298-project2/aux.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 10060,
 						"regions":
 						{
 						},
@@ -490,210 +503,7 @@
 							"syntax": "Packages/C++/C++.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 6,
-					"type": "text"
-				},
-				{
-					"buffer": 6,
-					"file": "inc/Mesh.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 3244,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								3186,
-								3186
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 167.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 10,
-					"type": "text"
-				},
-				{
-					"buffer": 7,
-					"file": "src/flowSolver.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 7874,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								4488,
-								4488
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 1935.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 8,
-					"file": "inc/FlowSolver.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 505,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								420,
-								420
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 7,
-					"type": "text"
-				},
-				{
-					"buffer": 9,
-					"file": "inc/MecFlu.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 2850,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								1547,
-								1547
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 8,
-					"type": "text"
-				},
-				{
-					"buffer": 10,
-					"file": "src/mecflu.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 968,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								140,
-								140
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 9,
-					"type": "text"
-				},
-				{
-					"buffer": 11,
-					"file": "inc/Numerics.h",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 607,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								385,
-								385
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 5,
-					"type": "text"
-				},
-				{
-					"buffer": 12,
-					"file": "src/numerics.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 544,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								382,
-								382
-							]
-						],
-						"settings":
-						{
-							"apply_syntax_touched": true,
-							"syntax": "Packages/C++/C++.sublime-syntax"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 3187.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
@@ -730,7 +540,7 @@
 		"cols":
 		[
 			0.0,
-			0.350520833333,
+			0.433854166666,
 			1.0
 		],
 		"rows":
@@ -752,7 +562,7 @@
 	"project": "solver.sublime-project",
 	"replace":
 	{
-		"height": 44.0
+		"height": 68.0
 	},
 	"save_all_on_build": true,
 	"select_file":

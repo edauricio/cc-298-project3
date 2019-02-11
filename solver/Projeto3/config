@@ -10,12 +10,12 @@
 		"InflowDir": 0
 	},
 	"Numerics": {
-		"Scheme": "vanLeer",
-		"SteadyStateSpatialOrder": "second",
+		"Scheme": "Liou",
+		"SteadyStateSpatialOrder": "first",
 		"Time": "explicit",
 		"TransientSpatialOrder": "fisrt",
 		"CFL": 0.2,
-		"IterationMax": 20000,
+		"IterationMax": 3000,
 		"WriteInterval": 100,
 		"ConvergenceCriteria": 6
 	}

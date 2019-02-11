@@ -3,8 +3,6 @@
 #include <iostream>
 #include "Mesh.h"
 
-using namespace std;
-
 void Mesh::sizing() {
   X.resize(IMAX);
   Y.resize(IMAX);
@@ -53,7 +51,7 @@ void Mesh::sizing() {
 
 void Mesh::metrics() {
   if (coord != "GENERALIZED" && coord != "CARTESIAN") {
-    cout << "Invalid coordinate system provided to Constructor. Should be either Cartesian or Generalized." << endl;
+    std::cout << "Invalid coordinate system provided to Constructor. Should be either Cartesian or Generalized." << std::endl;
     exit(-1);
   } else {
     if (KMAX == 1) {
@@ -129,20 +127,20 @@ void Mesh::metrics() {
       ETA_X[IMAX-1][JMAX-1][0] = -Jacob[IMAX-1][JMAX-1][0]*(Y[IMAX-1][JMAX-1][0] - Y[IMAX-2][JMAX-1][0]);
       ETA_Y[IMAX-1][JMAX-1][0] = Jacob[IMAX-1][JMAX-1][0]*(X[IMAX-1][JMAX-1][0] - X[IMAX-2][JMAX-1][0]);
     } else {
-      cout << "3D mesh not supported yet." << endl;
+      std::cout << "3D mesh not supported yet." << std::endl;
       exit(-1);
     }
   }
 }
 
-Mesh &Mesh::read(string fName) {
-  ifstream rFile;
+Mesh &Mesh::read(std::string fName) {
+  std::ifstream rFile;
   rFile.open(fName);
   if (rFile.is_open()) {
     rFile.precision(6);
-    rFile >> scientific;
+    rFile >> std::scientific;
     int aux, header = 1;
-    string lineBuff;
+    std::string lineBuff;
     while(header && getline(rFile, lineBuff)) {
       if (lineBuff.substr(0,10) == "DIMENSIONS") {
         IMAX = atoi(lineBuff.substr(11, lineBuff.find_first_of(' ', 11)-11).c_str());
@@ -166,77 +164,77 @@ Mesh &Mesh::read(string fName) {
       }
     }
   } else {
-    cout << "Error opening file to read mesh. Please check filename." << endl;
+    std::cout << "Error opening file to read mesh. Please check filename." << std::endl;
     exit(-1);
   }
   rFile.close();
   return *this;
 }
 
-const Mesh &Mesh::write(string fName, string pMetrics, string mName) const {
+const Mesh &Mesh::write(std::string fName, std::string pMetrics, std::string mName) const {
   for (auto &c : pMetrics)
     c = toupper(c);
-  ofstream wFile;
+  std::ofstream wFile;
   wFile.open(fName);
   wFile.precision(6);
-  wFile << scientific;
-  wFile << "# vtk DataFile Version 3.0" << endl
-        << mName << endl
-        << "ASCII" << endl
-        << "DATASET STRUCTURED_GRID" << endl
-        << "DIMENSIONS " << IMAX << " " << JMAX << " " << KMAX << " " << endl
-        << "POINTS " << IMAX*JMAX*KMAX << " double" << endl;
+  wFile << std::scientific;
+  wFile << "# vtk DataFile Version 3.0" << std::endl
+        << mName << std::endl
+        << "ASCII" << std::endl
+        << "DATASET STRUCTURED_GRID" << std::endl
+        << "DIMENSIONS " << IMAX << " " << JMAX << " " << KMAX << " " << std::endl
+        << "POINTS " << IMAX*JMAX*KMAX << " double" << std::endl;
   for (mesh_index k = 0; k != KMAX; ++k) {
     for (mesh_index j = 0; j != JMAX; ++j) {
       for (mesh_index i = 0; i != IMAX; ++i) {
-        wFile << X[i][j][k] << " " << Y[i][j][k] << " " << Z[i][j][k] << endl;
+        wFile << X[i][j][k] << " " << Y[i][j][k] << " " << Z[i][j][k] << std::endl;
       }
     }
   }
   if (pMetrics == "YES") {
-    wFile << "POINT_DATA " << IMAX*JMAX*KMAX << endl
-          << "SCALARS Jacob double" << endl
-          << "LOOKUP_TABLE default" << endl;
+    wFile << "POINT_DATA " << IMAX*JMAX*KMAX << std::endl
+          << "SCALARS Jacob double" << std::endl
+          << "LOOKUP_TABLE default" << std::endl;
     for (mesh_index k = 0; k != KMAX; ++k) {
       for (mesh_index j = 0; j != JMAX; ++j) {
         for (mesh_index i = 0; i != IMAX; ++i) {
-          wFile << Jacob[i][j][k] << endl;
+          wFile << Jacob[i][j][k] << std::endl;
         }
       }
     }
-    wFile << "SCALARS xi_x double" << endl
-          << "LOOKUP_TABLE default" << endl;
+    wFile << "SCALARS xi_x double" << std::endl
+          << "LOOKUP_TABLE default" << std::endl;
     for (mesh_index k = 0; k != KMAX; ++k) {
       for (mesh_index j = 0; j != JMAX; ++j) {
         for (mesh_index i = 0; i != IMAX; ++i) {
-          wFile << XI_X[i][j][k] << endl;
+          wFile << XI_X[i][j][k] << std::endl;
         }
       }
     }
-    wFile << "SCALARS xi_y double" << endl
-          << "LOOKUP_TABLE default" << endl;
+    wFile << "SCALARS xi_y double" << std::endl
+          << "LOOKUP_TABLE default" << std::endl;
     for (mesh_index k = 0; k != KMAX; ++k) {
       for (mesh_index j = 0; j != JMAX; ++j) {
         for (mesh_index i = 0; i != IMAX; ++i) {
-          wFile << XI_Y[i][j][k] << endl;
+          wFile << XI_Y[i][j][k] << std::endl;
         }
       }
     }
-    wFile << "SCALARS eta_x double" << endl
-          << "LOOKUP_TABLE default" << endl;
+    wFile << "SCALARS eta_x double" << std::endl
+          << "LOOKUP_TABLE default" << std::endl;
     for (mesh_index k = 0; k != KMAX; ++k) {
       for (mesh_index j = 0; j != JMAX; ++j) {
         for (mesh_index i = 0; i != IMAX; ++i) {
-          wFile << ETA_X[i][j][k] << endl;
+          wFile << ETA_X[i][j][k] << std::endl;
         }
       }
     }
-    wFile << "SCALARS eta_y double" << endl
-          << "LOOKUP_TABLE default" << endl;
+    wFile << "SCALARS eta_y double" << std::endl
+          << "LOOKUP_TABLE default" << std::endl;
     for (mesh_index k = 0; k != KMAX; ++k) {
       for (mesh_index j = 0; j != JMAX; ++j) {
         for (mesh_index i = 0; i != IMAX; ++i) {
-          wFile << ETA_Y[i][j][k] << endl;
+          wFile << ETA_Y[i][j][k] << std::endl;
         }
       }
     }

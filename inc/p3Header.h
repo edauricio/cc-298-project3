@@ -24,7 +24,8 @@ void updateBoundaryCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matr
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&);
 void calcFluxJ(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, const size_t, const size_t);
-void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t);
+std::vector<double> calcNumFlux(Matrix<Vector<double> >&, const size_t, const size_t, const int, const int);
+void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<double>&, const size_t, const size_t);
 
 void writeResult(Matrix<Vector<double> >&, Matrix<Vector<double> >&, std::string);
 double calcLinfRes(Matrix<Vector<double> >&, const size_t);
@@ -59,7 +60,9 @@ const double gama = InitFlow("Gamma"),
 						 Rnon = Rg/Rref,
 
 						 CFL = InitNum("CFL"),
-             Conv = InitNum("ConvergenceCriteria");
+             Conv = InitNum("ConvergenceCriteria"),
+             alphaL = 3./16.,
+             betaL = 1./8.;
 
 const int NMAX = InitNum("IterationMax"),
 					write_int = InitNum("WriteInterval"),
@@ -67,7 +70,9 @@ const int NMAX = InitNum("IterationMax"),
           ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
           exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0),
           imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0);
-
+template <typename T> inline int sgnf(T val) {
+  return (val > 0) - (val < 0);
+}
 inline double calcP(const Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
 	return (gama-1)*(Q[i][j][3] - 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)));
 }
@@ -77,6 +82,28 @@ inline double calcT(const Matrix<Vector<double> > &Q, const size_t i, const size
 inline double calcEigValPlusMinus(const double Vel, const double c, const int s_s) {
   return 0.5*((Vel + c) + s_s*std::abs(Vel + c));
 }
+inline double calcaStarL(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+  return sqrt((2*(Q[i][j][3] + calcP(Q,i,j))*(gama-1))/(Q[i][j][0]*(gama+1)));
+}
+inline double calcaTildeE(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+  return pow(calcaStarL(Q,i,j), 2)/std::max(calcaStarL(Q,i,j), std::abs(Q[i][j][1]/Q[i][j][0]));
+}
+inline double calcaTildeF(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+  return pow(calcaStarL(Q,i,j), 2)/std::max(calcaStarL(Q,i,j), std::abs(Q[i][j][2]/Q[i][j][0]));
+}
+inline double calcMStyle(const double Ma, const int sign) {
+  return (std::abs(Ma) >= 1.0) ? (0.5*(Ma + sign*std::abs(Ma))) : (sign*0.5*pow(Ma + sign, 2) + sign*(1./8)*pow(pow(Ma,2) - 1, 2));
+}
+inline double calcmFaceE(Matrix<Vector<double> > &Q, const double aface, const size_t i, const size_t j) {
+  return calcMStyle((Q[i][j][1]/Q[i][j][0])/aface, 1) + calcMStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1);
+}
+inline double calcmFaceF(Matrix<Vector<double> > &Q, const double aface, const size_t i, const size_t j) {
+  return calcMStyle((Q[i][j][2]/Q[i][j][0])/aface, 1) + calcMStyle((Q[i][j+1][2]/Q[i][j+1][0])/aface, -1);
+}
+inline double calcPStyle(const double Ma, const int sign) {
+  return (std::abs(Ma) >= 1.0) ? (0.5*(1 + sign*sgnf(Ma))) : (0.25*pow(Ma + sign, 2)*(2 - sign*Ma) + sign*(3./16)*Ma*pow(pow(Ma,2) - 1, 2));
+}
+
 
 const Mesh mesh(readMesh("MeshFile"));
 const double dx = mesh.x(1,0) - mesh.x(0,0),

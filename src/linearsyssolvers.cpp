@@ -66,10 +66,10 @@ std::vector<double> Trid(const std::vector<std::vector<double> > &A, const std::
  */
 std::vector<double> Penta(const std::vector<std::vector<double> > &A, const std::vector<double> &f) {
 	if (A[0].size() != 5) {
-		cout << "The system is not pentadiagonal or coefficient matrix is in invalid form. Exiting. . ." << endl;
+		std::cout << "The system is not pentadiagonal or coefficient matrix is in invalid form. Exiting. . ." << std::endl;
 		exit(-1);
 	} else if (A.size() != f.size()) {
-		cout << "Dimensions of matrix A and vector f don't match. Exiting. . ." << endl;
+		std::cout << "Dimensions of matrix A and vector f don't match. Exiting. . ." << std::endl;
 		exit(-1);
 	}
 	const size_t n = f.size();
