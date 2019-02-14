@@ -446,13 +446,13 @@ void calcAD(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &AD_x, Matrix<Ve
       if ((i == mesh.xsize()-2) || (i == 1)) {
         AD_x[i][j] = eps_e*dt[i][j]*(Q[i+1][j] - 2*Q[i][j] + Q[i-1][j]);
       } else {
-        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 6*Q[i][j] - 4*Q[i-1][j] + Q[i+2][j]);  
+        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 6*Q[i][j] - 4*Q[i-1][j] + Q[i-2][j]);  
       }
       
       if ((j == mesh.ysize()-2) || (j == 1)) {
         AD_y[i][j] = eps_e*dt[i][j]*(Q[i][j+1] - 2*Q[i][j] + Q[i][j-1]);
       } else {
-        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 6*Q[i][j] - 4*Q[i][j-1] + Q[i][j+2]);
+        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 6*Q[i][j] - 4*Q[i][j-1] + Q[i][j-2]);
       }
     break;
 
