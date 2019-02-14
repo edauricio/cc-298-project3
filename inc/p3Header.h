@@ -25,7 +25,8 @@ void updateBoundaryCond(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matr
 void calcFluxJ(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&,
 										Matrix<Matrix<double> >&,Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, const size_t, const size_t);
 std::vector<double> calcNumFlux(Matrix<Vector<double> >&, const size_t, const size_t, const int, const int);
-void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<double>&, const size_t, const size_t);
+void calcAD(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t, const int);
+void calcRES(Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Matrix<double> >&, Matrix<Vector<double> >&, Matrix<Vector<double> >&, Matrix<double>&, const size_t, const size_t);
 
 void writeResult(Matrix<Vector<double> >&, Matrix<Vector<double> >&, std::string);
 double calcLinfRes(Matrix<Vector<double> >&, const size_t);
@@ -40,36 +41,38 @@ const double gama = InitFlow("Gamma"),
 						 M1 = InitFlow("Mach1"),
 						 beta1 = InitFlow("Beta1")*d2r,
 						 p1 = InitFlow("P1"),
-						 T1 = InitFlow("T1"),
+						 T1 = InitFlow("T1")+273,
 						 Rg = InitFlow("Rgas"),
 						 V1dir = InitFlow("InflowDir"),
-						 rho1 = p1/(Rg*(T1+273)),
+						 rho1 = p1/(Rg*T1),
 						 a1 = sqrt(gama*p1/rho1),
 						 V1 = M1*a1,
 						 u1 = V1*cos(V1dir*d2r),
 						 v1 = V1*sin(V1dir*d2r),
 						 p0 = p1*pow((1 + ((gama-1)/2)*pow(M1,2)), (gama/(gama-1))),
 						 pref = p0,
-						 T0 = (T1+273)*(1 + ((gama-1)/2)*pow(M1,2)),
+						 T0 = T1*(1 + ((gama-1)/2)*pow(M1,2)),
 						 Tref = T0,
 						 a0 = sqrt((1 + ((gama-1)/2)*pow(M1,2))*pow(a1,2)),
 						 astar = sqrt((2 / (gama+1))*pow(a0,2)),
 						 uref = astar,
 						 rho_ref = p0/pow(uref,2),
-						 Rref = pow(uref,2)/T0,
+						 Rref = pow(uref,2)/Tref,
 						 Rnon = Rg/Rref,
 
 						 CFL = InitNum("CFL"),
              Conv = InitNum("ConvergenceCriteria"),
-             alphaL = 3./16.,
-             betaL = 1./8.;
+             alphaL = InitNum("AlphaLiou"),
+             betaL = InitNum("BetaLiou"),
+             eps_e = InitNum("ConstantEpsilon");
 
 const int NMAX = InitNum("IterationMax"),
 					write_int = InitNum("WriteInterval"),
-          method = (InitNumStr("Scheme") == "StegerWarming") ? 1 : ((InitNumStr("Scheme") == "vanLeer") ? 2 : ((InitNumStr("Scheme") == "Liou") ? 3 : 0)),
+          method = (InitNumStr("Scheme") == "StegerWarming") ? 1 : ((InitNumStr("Scheme") == "vanLeer") ? 2 : ((InitNumStr("Scheme") == "Liou") ? 3 : ((InitNumStr("Scheme") == "BeamWarming") ? 4 : 0))),
           ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
           exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0),
-          imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0);
+          imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0),
+          ad_type = (InitNumStr("ArtificialDissipationType") == "Linear") ? 1 : ((InitNumStr("ArtificialDissipationType") == "Isotropic") ? 2 : ((InitNumStr("ArtificialDissipationType") == "NonIsotropic") ? 3 : 0));
 template <typename T> inline int sgnf(T val) {
   return (val > 0) - (val < 0);
 }
@@ -92,7 +95,7 @@ inline double calcaTildeF(Matrix<Vector<double> > &Q, const size_t i, const size
   return pow(calcaStarL(Q,i,j), 2)/std::max(calcaStarL(Q,i,j), std::abs(Q[i][j][2]/Q[i][j][0]));
 }
 inline double calcMStyle(const double Ma, const int sign) {
-  return (std::abs(Ma) >= 1.0) ? (0.5*(Ma + sign*std::abs(Ma))) : (sign*0.5*pow(Ma + sign, 2) + sign*(1./8)*pow(pow(Ma,2) - 1, 2));
+  return (std::abs(Ma) >= 1.0) ? (0.5*(Ma + sign*std::abs(Ma))) : (sign*0.5*pow(Ma + sign, 2) + sign*betaL*pow(pow(Ma,2) - 1, 2));
 }
 inline double calcmFaceE(Matrix<Vector<double> > &Q, const double aface, const size_t i, const size_t j) {
   return calcMStyle((Q[i][j][1]/Q[i][j][0])/aface, 1) + calcMStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1);
@@ -101,7 +104,10 @@ inline double calcmFaceF(Matrix<Vector<double> > &Q, const double aface, const s
   return calcMStyle((Q[i][j][2]/Q[i][j][0])/aface, 1) + calcMStyle((Q[i][j+1][2]/Q[i][j+1][0])/aface, -1);
 }
 inline double calcPStyle(const double Ma, const int sign) {
-  return (std::abs(Ma) >= 1.0) ? (0.5*(1 + sign*sgnf(Ma))) : (0.25*pow(Ma + sign, 2)*(2 - sign*Ma) + sign*(3./16)*Ma*pow(pow(Ma,2) - 1, 2));
+  return (std::abs(Ma) >= 1.0) ? (0.5*(1 + sign*sgnf(Ma))) : (0.25*pow(Ma + sign, 2)*(2 - sign*Ma) + sign*alphaL*Ma*pow(pow(Ma,2) - 1, 2));
+}
+inline double calcSpeedSound(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+	return sqrt(gama*calcP(Q,i,j)/Q[i][j][0]);
 }
 
 

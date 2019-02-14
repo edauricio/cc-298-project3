@@ -96,7 +96,7 @@ void updateBoundaryCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p
 	// Wall: Euler BC; dp/dn = dT/dn = 0.
 	for (size_t i = 1; i != mesh.xsize()-1; ++i) {
 		Q[i][0][0] = calcP(Q,i,1)/(Rnon*calcT(Q,i,1));
-		Q[i][0][1] = Q[i][1][1];
+		Q[i][0][1] = Q[i][0][0]*(Q[i][1][1]/Q[i][1][0]);
 		Q[i][0][2] = 0.0;
 		Q[i][0][3] = calcP(Q,i,1)/(gama-1) + 0.5*Q[i][0][0]*(pow(Q[i][0][1]/Q[i][0][0],2) + pow(Q[i][0][2]/Q[i][0][0],2));
 
@@ -206,18 +206,21 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
 
       A_m[i][j] = M*(P*Diag*P_i)*M_i;
 
-      E_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1));
-      E_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
-      E_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
-      E_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
-                      ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
+     //  E_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1));
+     //  E_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+     //  E_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+     //  E_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
 
 
-    	E_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1));
-      E_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
-      E_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
-      E_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
-                      ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+    	// E_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1));
+     //  E_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+     //  E_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+     //  E_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+
+      E_p[i][j] = A_p[i][j]*Q[i][j];
+      E_m[i][j] = A_m[i][j]*Q[i][j];
 
     	k1 = 0;
     	k2 = 1.0;
@@ -272,18 +275,22 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
 
     	B_m[i][j] = M*(P*Diag*P_i)*M_i;
 
-    	F_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1));
-      F_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
-      F_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
-      F_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
-                      ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
+    	// F_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1));
+     //  F_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+     //  F_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+     //  F_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));
 
 
-      F_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1));
-      F_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
-      F_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
-      F_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
-                      ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+     //  F_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1));
+     //  F_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));
+     //  F_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));
+     //  F_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + 
+     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));
+
+      F_p[i][j] = B_p[i][j]*Q[i][j];
+      F_m[i][j] = B_m[i][j]*Q[i][j];
+
     break;
 
     case 2:
@@ -308,9 +315,18 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
       F_m[i][j][3] = F_m[i][j][0]*(0.5*pow(Q[i][j][1]/Q[i][j][0], 2) + pow(((gama-1)*(Q[i][j][2]/Q[i][j][0]) - 2*c), 2)/(2*(pow(gama,2) - 1)));
     break;
 
-    case 3:
+    case 4:
+     E_p[i][j][0] = Q[i][j][1];
+     E_p[i][j][1] = pow(Q[i][j][1],2)/Q[i][j][0] + calcP(Q,i,j);
+     E_p[i][j][2] = Q[i][j][1]*Q[i][j][2]/Q[i][j][0];
+     E_p[i][j][3] = (Q[i][j][3] + calcP(Q,i,j))*(Q[i][j][1]/Q[i][j][0]);
 
+     F_p[i][j][0] = Q[i][j][2];
+     F_p[i][j][1] = Q[i][j][2]*Q[i][j][1]/Q[i][j][0];
+     F_p[i][j][2] = pow(Q[i][j][2], 2)/Q[i][j][0] + calcP(Q,i,j);
+     F_p[i][j][3] = (Q[i][j][3] + calcP(Q,i,j))*(Q[i][j][2]/Q[i][j][0]);
     break;
+
   }
 
 }
@@ -333,18 +349,20 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
           ConvFlux_R[2] = Q[i+1][j][2];
           ConvFlux_R[3] = Q[i+1][j][3] + calcP(Q,i+1,j);
 
-          aface = std::min(calcaTildeE(Q, i, j), calcaTildeE(Q, i+1, j));
+          //aface = std::min(calcaTildeE(Q, i, j), calcaTildeE(Q, i+1, j));
+          aface = sqrt(sqrt(gama*calcP(Q,i,j)/Q[i][j][0])*sqrt(gama*calcP(Q,i+1,j)/Q[i+1][j][0]));
           mface_p = 0.5*(calcmFaceE(Q, aface, i, j) + std::abs(calcmFaceE(Q, aface, i, j)));
           mface_m = 0.5*(calcmFaceE(Q, aface, i, j) - std::abs(calcmFaceE(Q, aface, i, j)));
           pface = calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1)*calcP(Q, i+1, j);
 
           PFlux[1] = pface;
+                    //std::cout << i << " " << j << ":" << "\n" << aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux << "\n";
+
 
           return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
         break;
 
         case -1:
-        //VERIFICAR FLUXOS A PARTIR DAQUI
           ConvFlux_L[0] = Q[i-1][j][0];
           ConvFlux_L[1] = Q[i-1][j][1];
           ConvFlux_L[2] = Q[i-1][j][2];
@@ -355,12 +373,15 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
           ConvFlux_R[2] = Q[i][j][2];
           ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);
 
-          aface = std::min(calcaTildeE(Q, i-1, j), calcaTildeE(Q, i, j));
+          //aface = std::min(calcaTildeE(Q, i-1, j), calcaTildeE(Q, i, j));
+          aface = sqrt(sqrt(gama*calcP(Q,i-1,j)/Q[i-1][j][0])*sqrt(gama*calcP(Q,i,j)/Q[i][j][0]));
           mface_p = 0.5*(calcmFaceE(Q, aface, i-1, j) + std::abs(calcmFaceE(Q, aface, i-1, j)));
           mface_m = 0.5*(calcmFaceE(Q, aface, i-1, j) - std::abs(calcmFaceE(Q, aface, i-1, j)));
           pface = calcPStyle((Q[i-1][j][1]/Q[i-1][j][0])/aface, 1)*calcP(Q, i-1, j) + calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);
 
           PFlux[1] = pface;
+
+          //std::cout << PFlux << "\n";
 
           return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;
 
@@ -381,7 +402,8 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
           ConvFlux_R[2] = Q[i][j+1][2];
           ConvFlux_R[3] = Q[i][j+1][3] + calcP(Q,i,j+1);
 
-          aface = std::min(calcaTildeF(Q, i, j), calcaTildeF(Q, i, j+1));
+          //aface = std::min(calcaTildeF(Q, i, j), calcaTildeF(Q, i, j+1));
+          aface = sqrt(sqrt(gama*calcP(Q,i,j)/Q[i][j][0])*sqrt(gama*calcP(Q,i,j+1)/Q[i][j+1][0]));
           mface_p = 0.5*(calcmFaceF(Q, aface, i, j) + std::abs(calcmFaceF(Q, aface, i, j)));
           mface_m = 0.5*(calcmFaceF(Q, aface, i, j) - std::abs(calcmFaceF(Q, aface, i, j)));
           pface = calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i][j+1][2]/Q[i][j+1][0])/aface, -1)*calcP(Q, i, j+1);
@@ -402,7 +424,8 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
           ConvFlux_R[2] = Q[i][j][2];
           ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);
 
-          aface = std::min(calcaTildeF(Q, i, j-1), calcaTildeF(Q, i, j));
+          //aface = std::min(calcaTildeF(Q, i, j-1), calcaTildeF(Q, i, j));
+          aface = sqrt(sqrt(gama*calcP(Q,i,j-1)/Q[i][j-1][0])*sqrt(gama*calcP(Q,i,j)/Q[i][j][0]));
           mface_p = 0.5*(calcmFaceF(Q, aface, i, j-1) + std::abs(calcmFaceF(Q, aface, i, j-1)));
           mface_m = 0.5*(calcmFaceF(Q, aface, i, j-1) - std::abs(calcmFaceF(Q, aface, i, j-1)));
           pface = calcPStyle((Q[i][j-1][2]/Q[i][j-1][0])/aface, 1)*calcP(Q, i, j-1) + calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);
@@ -414,11 +437,41 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
       }
     break;
   }
-  return ConvFlux_L;
 }
 
+void calcAD(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &AD_x, Matrix<Vector<double> > &AD_y, Matrix<double> &dt, const size_t i, const size_t j, const int adtype) {
 
-void calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, Matrix<double> &dt, const size_t i, const size_t j) {
+  switch(adtype) {
+    case 1:
+      if ((i == mesh.xsize()-2) || (i == 1)) {
+        AD_x[i][j] = eps_e*dt[i][j]*(Q[i+1][j] - 2*Q[i][j] + Q[i-1][j]);
+      } else {
+        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 6*Q[i][j] - 4*Q[i-1][j] + Q[i+2][j]);  
+      }
+      
+      if ((j == mesh.ysize()-2) || (j == 1)) {
+        AD_y[i][j] = eps_e*dt[i][j]*(Q[i][j+1] - 2*Q[i][j] + Q[i][j-1]);
+      } else {
+        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 6*Q[i][j] - 4*Q[i][j-1] + Q[i][j+2]);
+      }
+    break;
+
+    case 2:
+
+    break;
+
+    case 3:
+
+    break;
+
+    default:
+      std::cout << "Unknown artificial dissipation type. Please double check." << std::endl;
+      exit(-1);
+    break;
+  }
+}
+
+void calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, Matrix<Vector<double> > &AD_x, Matrix<Vector<double> > &AD_y, Matrix<double> &dt, const size_t i, const size_t j) {
   switch(ss_order) {
     case 1:
       switch(method) {
@@ -429,6 +482,11 @@ void calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Ve
 
         case 3:
           RES[i][j] = -dt[i][j]*((1./dx)*(calcNumFlux(Q, i, j, 1, 1) - calcNumFlux(Q, i, j, 1, -1)) + (1./dy)*(calcNumFlux(Q, i, j, 2, 1) - calcNumFlux(Q, i, j, 2, -1)));
+        break;
+
+        case 4:
+          std::cout << "First-order steady-state not implemented for centered scheme. Please choose second-order." << std::endl;
+          exit(-1);
         break;
       }
     break;
@@ -467,6 +525,10 @@ void calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Ve
         case 3:
           std::cout << "Second-order AUSM+ is not implemented. Please change method or order." << std::endl;
           exit(-1);
+        break;
+
+        case 4:
+          RES[i][j] = -dt[i][j]*((1./(2*dx))*(E_p[i+1][j] - E_p[i-1][j]) + (1./(2*dy))*(F_p[i][j+1] - F_p[i][j-1])) + AD_x[i][j] + AD_y[i][j];
         break;
       }
     break;

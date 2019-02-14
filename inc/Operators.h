@@ -4,6 +4,13 @@
 #include <vector>
 #include <iostream>
 
+template <typename T>
+std::ostream &operator<< (std::ostream &os, const std::vector<T> &vec) {
+	for (T e : vec)
+		os << e << "\n";
+	return os;
+}
+
 /*Operator << on an object of vector class:
 Returns the column j of matrix A.
 Usage:

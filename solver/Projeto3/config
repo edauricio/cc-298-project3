@@ -10,13 +10,17 @@
 		"InflowDir": 0
 	},
 	"Numerics": {
-		"Scheme": "Liou",
-		"SteadyStateSpatialOrder": "first",
+		"Scheme": "BeamWarming",
+		"SteadyStateSpatialOrder": "second",
 		"Time": "explicit",
 		"TransientSpatialOrder": "fisrt",
 		"CFL": 0.2,
-		"IterationMax": 3000,
+		"IterationMax": 5000,
 		"WriteInterval": 100,
-		"ConvergenceCriteria": 6
+		"ConvergenceCriteria": 12,
+		"AlphaLiou": 0.1875,
+		"BetaLiou": 0.125,
+		"ArtificialDissipationType": "Linear",
+		"ConstantEpsilon": 2.0
 	}
 }
