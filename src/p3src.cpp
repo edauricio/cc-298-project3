@@ -1,5 +1,6 @@
 #include <fstream>
 #include <cmath>
+#include <algorithm>
 #include <iostream>
 #include "p3Header.h"
 #include "Operators.h"
@@ -326,9 +327,7 @@ void calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<
      F_p[i][j][2] = pow(Q[i][j][2], 2)/Q[i][j][0] + calcP(Q,i,j);
      F_p[i][j][3] = (Q[i][j][3] + calcP(Q,i,j))*(Q[i][j][2]/Q[i][j][0]);
     break;
-
   }
-
 }
 
 std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const int direction, const int LR) {
@@ -437,31 +436,107 @@ std::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, cons
       }
     break;
   }
+  return ConvFlux_R;
 }
 
 void calcAD(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &AD_x, Matrix<Vector<double> > &AD_y, Matrix<double> &dt, const size_t i, const size_t j, const int adtype) {
+  Vector<double> eps2(2);
 
   switch(adtype) {
     case 1:
-      if ((i == mesh.xsize()-2) || (i == 1)) {
-        AD_x[i][j] = eps_e*dt[i][j]*(Q[i+1][j] - 2*Q[i][j] + Q[i-1][j]);
+      if (i == 1) {
+        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 5*Q[i][j] - 2*Q[i-1][j]);
+      } else if (i == mesh.xsize()-2) {
+        AD_x[i][j] = -eps_e*dt[i][j]*(-2*Q[i+1][j] + 5*Q[i][j] - 4*Q[i-1][j] + Q[i-2][j]);
       } else {
         AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 6*Q[i][j] - 4*Q[i-1][j] + Q[i-2][j]);  
       }
       
-      if ((j == mesh.ysize()-2) || (j == 1)) {
-        AD_y[i][j] = eps_e*dt[i][j]*(Q[i][j+1] - 2*Q[i][j] + Q[i][j-1]);
+      if (j == 1) {
+        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 5*Q[i][j] - 2*Q[i][j-1]);
+      } else if (j == mesh.ysize()-2) { 
+        AD_y[i][j] = -eps_e*dt[i][j]*(-2*Q[i][j+1] + 5*Q[i][j] - 4*Q[i][j-1] + Q[i][j-2]);
       } else {
         AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 6*Q[i][j] - 4*Q[i][j-1] + Q[i][j-2]);
       }
     break;
 
     case 2:
+      if (i == 1) {
+        eps2[0] = kappa2*dt[i-1][j]*std::max({calcSIGMA(Q, i, j, 1, 0), std::abs(calcP(Q, i, j) - 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i-1, j) + calcP(Q, i-1, j)), 0.0});
+        eps2[1] = kappa2*dt[i][j]*std::max({calcSIGMA(Q, i+1, j, 1, 0), calcSIGMA(Q, i, j, 1, 0), std::abs(calcP(Q, i, j) - 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))});
+        AD_x[i][j] = (calcSigmaIso(Q, i+1, j) + calcSigmaIso(Q, i, j))*(eps2[1]*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i-1, j))*(eps2[0]*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - eps2[0])*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-1][j]));
+      } else if (i == 2) {
+        eps2[0] = kappa2*dt[i-1][j]*std::max({calcSIGMA(Q, i, j, 1, 0), calcSIGMA(Q, i-1, j, 1, 0), std::abs(calcP(Q, i-1, j) - 2*calcP(Q, i-2, j) + calcP(Q, i-2, j))/std::abs(calcP(Q, i-1, j) + 2*calcP(Q, i-2, j) + calcP(Q, i-2, j))});
+        AD_x[i][j] = (calcSigmaIso(Q, i+1, j) + calcSigmaIso(Q, i, j))*(calcEps2(Q, dt, i, j, 1, 0)*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 1, 0))*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i-1, j))*(eps2[0]*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - eps2[0])*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      } else if (i == mesh.xsize()-2) {
+        eps2[1] = kappa2*dt[i][j]*std::max({std::abs(calcP(Q, i+1, j) - 2*calcP(Q, i+1, j) + calcP(Q, i, j))/std::abs(calcP(Q, i+1, j) + 2*calcP(Q, i+1, j) + calcP(Q, i, j)), calcSIGMA(Q, i, j, 1, 0), calcSIGMA(Q, i-1, j, 1, 0)});
+        AD_x[i][j] = (calcSigmaIso(Q, i+1, j) + calcSigmaIso(Q, i, j))*(eps2[1]*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i+1][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i-1, j))*(calcEps2(Q, dt, i-1, j, 1, 0)*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - calcEps2(Q, dt, i-1, j, 1, 0))*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      }
+        else {
+        AD_x[i][j] = (calcSigmaIso(Q, i+1, j) + calcSigmaIso(Q, i, j))*(calcEps2(Q, dt, i, j, 1, 0)*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 1, 0))*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i-1, j))*(calcEps2(Q, dt, i-1, j, 1, 0)*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - calcEps2(Q, dt, i-1, j, 1, 0))*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      }
 
+      if (j == 1) {
+        eps2[0] = kappa2*dt[i][j-1]*std::max({calcSIGMA(Q, i, j, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1)), 0.0});
+        eps2[1] = kappa2*dt[i][j]*std::max({calcSIGMA(Q, i, j+1, 0, 1), calcSIGMA(Q, i, j, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1))});
+        AD_y[i][j] = (calcSigmaIso(Q, i, j+1) + calcSigmaIso(Q, i, j))*(eps2[1]*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i, j-1))*(eps2[0]*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - eps2[0])*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1]));
+      } else if (j == 2) {
+        eps2[0] = kappa2*dt[i][j-1]*std::max({calcSIGMA(Q, i, j, 0, 1), calcSIGMA(Q, i, j-1, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1))});
+        AD_y[i][j] = (calcSigmaIso(Q, i, j+1) + calcSigmaIso(Q, i, j))*(calcEps2(Q, dt, i, j, 0, 1)*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 0, 1))*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i, j-1))*(eps2[0]*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - eps2[0])*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      } else if (j == mesh.ysize()-2) {
+        eps2[1] = kappa2*dt[i][j]*std::max({std::abs(calcP(Q, i, j+1) - 2*calcP(Q, i, j+1) + calcP(Q, i, j))/std::abs(calcP(Q, i, j+1) + 2*calcP(Q, i, j+1) + calcP(Q, i, j)), calcSIGMA(Q, i, j, 0, 1), calcSIGMA(Q, i, j-1, 0, 1)});
+        AD_y[i][j] = (calcSigmaIso(Q, i, j+1) + calcSigmaIso(Q, i, j))*(eps2[1]*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i][j+1] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i, j-1))*(calcEps2(Q, dt, i, j-1, 0, 1)*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - calcEps2(Q, dt, i, j-1, 0, 1))*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      } else {
+        AD_y[i][j] = (calcSigmaIso(Q, i, j+1) + calcSigmaIso(Q, i, j))*(calcEps2(Q, dt, i, j, 0, 1)*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 0, 1))*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaIso(Q, i, j) + calcSigmaIso(Q, i, j-1))*(calcEps2(Q, dt, i, j-1, 0, 1)*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - calcEps2(Q, dt, i, j-1, 0, 1))*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      }
     break;
 
     case 3:
+      if (i == 1) {
+        eps2[0] = kappa2*dt[i-1][j]*std::max({calcSIGMA(Q, i, j, 1, 0), std::abs(calcP(Q, i, j) - 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i-1, j) + calcP(Q, i-1, j)), 0.0});
+        eps2[1] = kappa2*dt[i][j]*std::max({calcSIGMA(Q, i+1, j, 1, 0), calcSIGMA(Q, i, j, 1, 0), std::abs(calcP(Q, i, j) - 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i-1, j) + calcP(Q, i-1, j))});
+        AD_x[i][j] = (calcSigmaAniso(Q, i+1, j, 1) + calcSigmaAniso(Q, i, j, 1))*(eps2[1]*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaAniso(Q, i, j, 1) + calcSigmaAniso(Q, i-1, j, 1))*(eps2[0]*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - eps2[0])*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-1][j]));
+      } else if (i == 2) {
+        eps2[0] = kappa2*dt[i-1][j]*std::max({calcSIGMA(Q, i, j, 1, 0), calcSIGMA(Q, i-1, j, 1, 0), std::abs(calcP(Q, i-1, j) - 2*calcP(Q, i-2, j) + calcP(Q, i-2, j))/std::abs(calcP(Q, i-1, j) + 2*calcP(Q, i-2, j) + calcP(Q, i-2, j))});
+        AD_x[i][j] = (calcSigmaAniso(Q, i+1, j, 1) + calcSigmaAniso(Q, i, j, 1))*(calcEps2(Q, dt, i, j, 1, 0)*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 1, 0))*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaAniso(Q, i, j, 1) + calcSigmaAniso(Q, i-1, j, 1))*(eps2[0]*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - eps2[0])*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      } else if (i == mesh.xsize()-2) {
+        eps2[1] = kappa2*dt[i][j]*std::max({std::abs(calcP(Q, i+1, j) - 2*calcP(Q, i+1, j) + calcP(Q, i, j))/std::abs(calcP(Q, i+1, j) + 2*calcP(Q, i+1, j) + calcP(Q, i, j)), calcSIGMA(Q, i, j, 1, 0), calcSIGMA(Q, i-1, j, 1, 0)});
+        AD_x[i][j] = (calcSigmaAniso(Q, i+1, j, 1) + calcSigmaAniso(Q, i, j, 1))*(eps2[1]*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i+1][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaAniso(Q, i, j, 1) + calcSigmaAniso(Q, i-1, j, 1))*(calcEps2(Q, dt, i-1, j, 1, 0)*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - calcEps2(Q, dt, i-1, j, 1, 0))*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      }
+        else {
+        AD_x[i][j] = (calcSigmaAniso(Q, i+1, j, 1) + calcSigmaAniso(Q, i, j, 1))*(calcEps2(Q, dt, i, j, 1, 0)*(Q[i+1][j] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 1, 0))*(Q[i+2][j] - 3*Q[i+1][j] + 3*Q[i][j] - Q[i-1][j]))
+                     - (calcSigmaAniso(Q, i, j, 1) + calcSigmaAniso(Q, i-1, j, 1))*(calcEps2(Q, dt, i-1, j, 1, 0)*(Q[i][j] - Q[i-1][j]) - std::max(0.0, kappa4*dt[i-1][j] - calcEps2(Q, dt, i-1, j, 1, 0))*(Q[i+1][j] - 3*Q[i][j] + 3*Q[i-1][j] - Q[i-2][j]));
+      }
 
+      if (j == 1) {
+        eps2[0] = kappa2*dt[i][j-1]*std::max({calcSIGMA(Q, i, j, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1)), 0.0});
+        eps2[1] = kappa2*dt[i][j]*std::max({calcSIGMA(Q, i, j+1, 0, 1), calcSIGMA(Q, i, j, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1))});
+        AD_y[i][j] = (calcSigmaAniso(Q, i, j+1, 2) + calcSigmaAniso(Q, i, j, 2))*(eps2[1]*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaAniso(Q, i, j, 2) + calcSigmaAniso(Q, i, j-1, 2))*(eps2[0]*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - eps2[0])*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1]));
+      } else if (j == 2) {
+        eps2[0] = kappa2*dt[i][j-1]*std::max({calcSIGMA(Q, i, j, 0, 1), calcSIGMA(Q, i, j-1, 0, 1), std::abs(calcP(Q, i, j) - calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + calcP(Q, i, j-1))});
+        AD_y[i][j] = (calcSigmaAniso(Q, i, j+1, 2) + calcSigmaAniso(Q, i, j, 2))*(calcEps2(Q, dt, i, j, 0, 1)*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 0, 1))*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaAniso(Q, i, j, 2) + calcSigmaAniso(Q, i, j-1, 2))*(eps2[0]*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - eps2[0])*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      } else if (j == mesh.ysize()-2) {
+        eps2[1] = kappa2*dt[i][j]*std::max({std::abs(calcP(Q, i, j+1) - 2*calcP(Q, i, j+1) + calcP(Q, i, j))/std::abs(calcP(Q, i, j+1) + 2*calcP(Q, i, j+1) + calcP(Q, i, j)), calcSIGMA(Q, i, j, 0, 1), calcSIGMA(Q, i, j-1, 0, 1)});
+        AD_y[i][j] = (calcSigmaAniso(Q, i, j+1, 2) + calcSigmaAniso(Q, i, j, 2))*(eps2[1]*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - eps2[1])*(Q[i][j+1] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaAniso(Q, i, j, 2) + calcSigmaAniso(Q, i, j-1, 2))*(calcEps2(Q, dt, i, j-1, 0, 1)*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - calcEps2(Q, dt, i, j-1, 0, 1))*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      } else {
+        AD_y[i][j] = (calcSigmaAniso(Q, i, j+1, 2) + calcSigmaAniso(Q, i, j, 2))*(calcEps2(Q, dt, i, j, 0, 1)*(Q[i][j+1] - Q[i][j]) - std::max(0.0, kappa4*dt[i][j] - calcEps2(Q, dt, i, j, 0, 1))*(Q[i][j+2] - 3*Q[i][j+1] + 3*Q[i][j] - Q[i][j-1]))
+                     - (calcSigmaAniso(Q, i, j, 2) + calcSigmaAniso(Q, i, j-1, 2))*(calcEps2(Q, dt, i, j-1, 0, 1)*(Q[i][j] - Q[i][j-1]) - std::max(0.0, kappa4*dt[i][j-1] - calcEps2(Q, dt, i, j-1, 0, 1))*(Q[i][j+1] - 3*Q[i][j] + 3*Q[i][j-1] - Q[i][j-2]));
+      }
     break;
 
     default:

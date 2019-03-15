@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <algorithm>
 #include <initializer_list>
 #include "Mesh.h"
 #include "LinearSysSolvers.h"
@@ -64,7 +65,9 @@ const double gama = InitFlow("Gamma"),
              Conv = InitNum("ConvergenceCriteria"),
              alphaL = InitNum("AlphaLiou"),
              betaL = InitNum("BetaLiou"),
-             eps_e = InitNum("ConstantEpsilon");
+             eps_e = InitNum("ConstantEpsilon"),
+             kappa2 = InitNum("Kappa2"),
+             kappa4 = InitNum("Kappa4");
 
 const int NMAX = InitNum("IterationMax"),
 					write_int = InitNum("WriteInterval"),
@@ -72,7 +75,7 @@ const int NMAX = InitNum("IterationMax"),
           ss_order = (InitNumStr("SteadyStateSpatialOrder") == "first") ? 1 : ((InitNumStr("SteadyStateSpatialOrder") == "second") ? 2 : 0),
           exp_imp = (InitNumStr("Time") == "explicit") ? 0 : ((InitNumStr("Time") == "implicit") ? 1 : 0),
           imp_treat = (InitNumStr("TransientSpatialOrder") == "first") ? 1 : ((InitNumStr("TransientSpatialOrder") == "second") ? 2 : 0),
-          ad_type = (InitNumStr("ArtificialDissipationType") == "Linear") ? 1 : ((InitNumStr("ArtificialDissipationType") == "Isotropic") ? 2 : ((InitNumStr("ArtificialDissipationType") == "NonIsotropic") ? 3 : 0));
+          ad_type = (InitNumStr("ArtificialDissipationType") == "Linear") ? 1 : ((InitNumStr("ArtificialDissipationType") == "Isotropic") ? 2 : ((InitNumStr("ArtificialDissipationType") == "Anisotropic") ? 3 : 0));
 template <typename T> inline int sgnf(T val) {
   return (val > 0) - (val < 0);
 }
@@ -95,7 +98,7 @@ inline double calcaTildeF(Matrix<Vector<double> > &Q, const size_t i, const size
   return pow(calcaStarL(Q,i,j), 2)/std::max(calcaStarL(Q,i,j), std::abs(Q[i][j][2]/Q[i][j][0]));
 }
 inline double calcMStyle(const double Ma, const int sign) {
-  return (std::abs(Ma) >= 1.0) ? (0.5*(Ma + sign*std::abs(Ma))) : (sign*0.5*pow(Ma + sign, 2) + sign*betaL*pow(pow(Ma,2) - 1, 2));
+  return (std::abs(Ma) >= 1.0) ? (0.5*(Ma + sign*std::abs(Ma))) : (sign*0.25*pow(Ma + sign, 2) + sign*betaL*pow(pow(Ma,2) - 1, 2));
 }
 inline double calcmFaceE(Matrix<Vector<double> > &Q, const double aface, const size_t i, const size_t j) {
   return calcMStyle((Q[i][j][1]/Q[i][j][0])/aface, 1) + calcMStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1);
@@ -108,6 +111,18 @@ inline double calcPStyle(const double Ma, const int sign) {
 }
 inline double calcSpeedSound(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
 	return sqrt(gama*calcP(Q,i,j)/Q[i][j][0]);
+}
+inline double calcSigmaIso(Matrix<Vector<double> > &Q, const size_t i, const size_t j) {
+  return std::abs(Q[i][j][1]/Q[i][j][0]) + std::abs(Q[i][j][2]/Q[i][j][0]) + 2*calcSpeedSound(Q, i, j);
+}
+inline double calcSigmaAniso(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const size_t eq) {
+  return std::abs(Q[i][j][eq]/Q[i][j][0]) + calcSpeedSound(Q, i, j);
+}
+inline double calcSIGMA(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const size_t disp_i, const size_t disp_j) {
+  return std::abs(calcP(Q, i+disp_i, j+disp_j) - 2*calcP(Q, i, j) + calcP(Q, i-disp_i, j-disp_j))/std::abs(calcP(Q, i+disp_i, j+disp_j) + 2*calcP(Q, i, j) + calcP(Q, i-disp_i, j-disp_j));
+}
+inline double calcEps2(Matrix<Vector<double> > &Q, Matrix<double> &dt, const size_t i, const size_t j, const size_t disp_i, const size_t disp_j) {
+  return kappa2*dt[i][j]*std::max({calcSIGMA(Q, i+disp_i, j+disp_j, disp_i, disp_j), calcSIGMA(Q, i, j, disp_i, disp_j), calcSIGMA(Q, i-disp_i, j-disp_j, disp_i, disp_j)});
 }
 
 

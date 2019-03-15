@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"forma",
+				"formattedResults"
+			],
+			[
 				"Scala",
 				"ScalarFlowProp"
 			],
@@ -40,37 +44,39 @@
 	"buffers":
 	[
 		{
-			"file": "solver/Projeto3/p3.cpp",
+			"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/solver/Projeto3/p3.cpp",
 			"settings":
 			{
-				"buffer_size": 6577,
+				"buffer_size": 6542,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/solver/Projeto3/config",
+			"settings":
+			{
+				"buffer_size": 507,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "solver/Projeto3/config",
+			"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/inc/p3Header.h",
 			"settings":
 			{
-				"buffer_size": 433,
+				"buffer_size": 7479,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "inc/Operators.h",
+			"contents": "#include <fstream>\n#include <cmath>\n#include <iostream>\n#include \"p3Header.h\"\n#include \"Operators.h\"\n#include \"LinearSysSolvers.h\"\n#include \"json.hpp\"\n//#define MESHDEBUG\n#define NUMDEBUG\n\nusing json = nlohmann::json;\n\nExactSol exact;\ndouble norm_cont, norm_xm, norm_ym, norm_en;\n\ndouble InitFlow(std::string varName) {\n\tjson Init;\n\tstd::ifstream infile(\"config\");\n\tInit = json::parse(infile);\n\n\treturn Init[\"Initial Conditions\"][varName];\n}\n\ndouble InitNum(std::string varName) {\n\tjson Init;\n\tstd::ifstream infile(\"config\");\n\tInit = json::parse(infile);\n\n\treturn Init[\"Numerics\"][varName];\n}\n\nstd::string readMesh(std::string mFile) {\n\tjson MeshData;\n\tstd::ifstream infile(\"config\");\n\tMeshData = json::parse(infile);\n\n\treturn MeshData[\"MeshFile\"];\n}\n\nstd::string InitNumStr(std::string varName) {\n  json Init;\n  std::ifstream infile(\"config\");\n  Init = json::parse(infile);\n\n  return Init[\"Numerics\"][varName];\n}\n\nvoid setInitialCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m,\n\t\t\t\t\t\t\t\t\t\tMatrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m) {\n\tfor (size_t i = 1; i != mesh.xsize()-1; ++i) {\n\t\tfor (size_t j = 1; j != mesh.ysize()-1; ++j) {\n\t\t\tQ[i][j][0] = rho1/rho_ref;\n\t\t\tQ[i][j][1] = (rho1*u1)/(rho_ref*uref);\n\t\t\tQ[i][j][2] = (rho1*v1)/(rho_ref*uref);\n\t\t\tQ[i][j][3] = (p1/(gama-1) + 0.5*rho1*(pow(u1,2) + pow(v1,2)))/(rho_ref*pow(uref,2));\n\n\t\t\tcalcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, i, j);\n\t\t}\n\t}\n}\n\nvoid updateBoundaryCond(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m,\n\t\t\t\t\t\t\t\t\t\tMatrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m) {\n\tstatic int cnt = 0;\n\n\t// Inflow: Dirichlet. Only set for initial flow; won't change later.\n\tif (!cnt) {\n\t\tfor (size_t j = 0; j != mesh.ysize()-1; ++j) {\n\t\t\tQ[0][j][0] = rho1/rho_ref;\n\t\t\tQ[0][j][1] = (rho1*u1)/(rho_ref*uref);\n\t\t\tQ[0][j][2] = (rho1*v1)/(rho_ref*uref);\n\t\t\tQ[0][j][3] = (p1/(gama-1) + 0.5*rho1*(pow(u1,2) + pow(v1,2)))/(rho_ref*pow(uref,2));\n\n\t\t\tcalcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, 0, j);\n\t\t}\n\t}\n\n\t// Top boundary: Dirichlet. Same strategy as inflow.\n\tif (!cnt) {\n\t\tdouble a2, V2, u2, v2;\n\t\ta2 = sqrt(gama*exact.p2()/exact.rho2());\n\t\tV2 = exact.M2()*a2;\n\t\tu2 = V2*cos(V1dir-exact.theta());\n\t\tv2 = V2*sin(V1dir-exact.theta());\n\t\tfor (size_t i = 0; i != mesh.xsize()-1; ++i) {\n\t\t\tQ[i][mesh.ysize()-1][0] = exact.rho2()/rho_ref;\n\t\t\tQ[i][mesh.ysize()-1][1] = (exact.rho2()*u2)/(rho_ref*uref);\n\t\t\tQ[i][mesh.ysize()-1][2] = (exact.rho2()*v2)/(rho_ref*uref);\n\t\t\tQ[i][mesh.ysize()-1][3] = (exact.p2()/(gama-1) + 0.5*exact.rho2()*(pow(u2,2) + pow(v2,2)))/(rho_ref*pow(uref,2));\n\n\t\t\tcalcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, i, mesh.ysize()-1);\n\t\t}\n\t\t++cnt;\n\t}\n\n\t// Wall: Euler BC; dp/dn = dT/dn = 0.\n\tfor (size_t i = 1; i != mesh.xsize()-1; ++i) {\n\t\tQ[i][0][0] = calcP(Q,i,1)/(Rnon*calcT(Q,i,1));\n\t\tQ[i][0][1] = Q[i][0][0]*(Q[i][1][1]/Q[i][1][0]);\n\t\tQ[i][0][2] = 0.0;\n\t\tQ[i][0][3] = calcP(Q,i,1)/(gama-1) + 0.5*Q[i][0][0]*(pow(Q[i][0][1]/Q[i][0][0],2) + pow(Q[i][0][2]/Q[i][0][0],2));\n\n\t\tcalcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, i, 0);\n\t}\n\n\t// Exit: supersonic\n\tfor (size_t j = 0; j != mesh.ysize(); ++j) {\n\t\tQ[mesh.xsize()-1][j][0] = Q[mesh.xsize()-2][j][0];\n\t\tQ[mesh.xsize()-1][j][1] = Q[mesh.xsize()-2][j][1];\n\t\tQ[mesh.xsize()-1][j][2] = Q[mesh.xsize()-2][j][2];\n\t\tQ[mesh.xsize()-1][j][3] = Q[mesh.xsize()-2][j][3];\n\n    calcFluxJ(Q, E_p, E_m, F_p, F_m, A_p, A_m, B_p, B_m, mesh.xsize()-1, j);\n\t}\n}\n\nvoid calcFluxJ(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m,\n\t\t\t\t\t\t\t\t\t\tMatrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, const size_t i, const size_t j) {\n\tstatic Matrix<double> P(4), P_i(4), M(4), M_i(4), Diag(4);\n\tstatic int cnt = 0;\n\tdouble k1, k2, k1t, k2t, c;\n\n  c = sqrt(gama*calcP(Q,i,j)/Q[i][j][0]);\n\n  switch(method) {\n    case 1:\n    \tif (!cnt++)\n    \t\tfor (size_t i = 0; i != 4; ++i) {\n    \t\t\tP[i].resize(4);\n    \t\t\tP_i[i].resize(4);\n    \t\t\tM[i].resize(4);\n    \t\t\tM_i[i].resize(4);\n    \t\t\tDiag[i].resize(4);\n    \t}\n\n    \tk1 = 1.0;\n    \tk2 = 0;\n    \tk1t = 1.0;\n    \tk2t = 0;\n\n    \tM[0][0] = 1.0;\n    \tM[1][0] = Q[i][j][1]/Q[i][j][0];\n    \tM[1][1] = Q[i][j][0];\n    \tM[2][0] = Q[i][j][2]/Q[i][j][0];\n    \tM[2][2] = Q[i][j][0];\n    \tM[3][0] = 0.5*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0], 2));\n    \tM[3][1] = Q[i][j][1];\n    \tM[3][2] = Q[i][j][2];\n    \tM[3][3] = 1./(gama-1);\n\n    \tM_i[0][0] = 1.0;\n    \tM_i[1][0] = -(Q[i][j][1]/Q[i][j][0])/Q[i][j][0];\n    \tM_i[1][1] = 1./Q[i][j][0];\n    \tM_i[2][0] = -(Q[i][j][2]/Q[i][j][0])/Q[i][j][0];\n    \tM_i[2][2] = 1./Q[i][j][0];\n    \tM_i[3][0] = 0.5*(gama-1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2));\n    \tM_i[3][1] = -(gama-1)*(Q[i][j][1]/Q[i][j][0]);\n    \tM_i[3][2] = -(gama-1)*(Q[i][j][2]/Q[i][j][0]);\n    \tM_i[3][3] = gama-1;\n\n      P[0][0] = k1t;\n      P[0][1] = 0.0;\n      P[0][2] = Q[i][j][0]/(sqrt(2)*c);\n      P[0][3] = Q[i][j][0]/(sqrt(2)*c);\n      P[1][0] = 0.0;\n      P[1][1] = k2t;\n      P[1][2] = k1t/sqrt(2);\n      P[1][3] = -k1t/sqrt(2);\n      P[2][0] = 0.0;\n      P[2][1] = -k1t;\n      P[2][2] = k2t/sqrt(2);\n      P[2][3] = -k2t/sqrt(2);\n      P[3][0] = 0.0;\n      P[3][1] = 0.0;\n      P[3][2] = Q[i][j][0]*c/sqrt(2);\n      P[3][3] = Q[i][j][0]*c/sqrt(2);\n\n      P_i[0][0] = k1t;\n      P_i[0][1] = 0.0;\n      P_i[0][2] = 0.0;\n      P_i[0][3] = -k1t/pow(c,2);\n      P_i[1][0] = 0.0;\n      P_i[1][1] = k2t;\n      P_i[1][2] = -k1t;\n      P_i[1][3] = 0.0;\n      P_i[2][0] = 0.0;\n      P_i[2][1] = k1t/sqrt(2);\n      P_i[2][2] = k2t/sqrt(2);\n      P_i[2][3] = 1./(sqrt(2)*Q[i][j][0]*c);\n      P_i[3][0] = 0.0;\n      P_i[3][1] = -k1t/sqrt(2);\n      P_i[3][2] = -k2t/sqrt(2);\n      P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);\n\n    \tDiag[0][0] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1);\n    \tDiag[1][1] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1);\n    \tDiag[2][2] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1);\n    \tDiag[3][3] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1.*c, 1);\n\n    \tA_p[i][j] = M*(P*Diag*P_i)*M_i;\n\n    \tDiag[0][0] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1);\n    \tDiag[1][1] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1);\n    \tDiag[2][2] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1);\n    \tDiag[3][3] = calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1.*c, -1);\n\n      A_m[i][j] = M*(P*Diag*P_i)*M_i;\n\n     //  E_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1));\n     //  E_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));\n     //  E_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));\n     //  E_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + \n     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));\n\n\n    \t// E_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1));\n     //  E_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));\n     //  E_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));\n     //  E_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + \n     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][1]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));\n\n      E_p[i][j] = A_p[i][j]*Q[i][j];\n      E_m[i][j] = A_m[i][j]*Q[i][j];\n\n    \tk1 = 0;\n    \tk2 = 1.0;\n    \tk1t = 0;\n    \tk2t = 1.0;\n\n    \tP[0][0] = k1t;\n      P[0][1] = 0.0;\n      P[0][2] = Q[i][j][0]/(sqrt(2)*c);\n      P[0][3] = Q[i][j][0]/(sqrt(2)*c);\n      P[1][0] = 0.0;\n      P[1][1] = k2t;\n      P[1][2] = k1t/sqrt(2);\n      P[1][3] = -k1t/sqrt(2);\n      P[2][0] = 0.0;\n      P[2][1] = -k1t;\n      P[2][2] = k2t/sqrt(2);\n      P[2][3] = -k2t/sqrt(2);\n      P[3][0] = 0.0;\n      P[3][1] = 0.0;\n      P[3][2] = Q[i][j][0]*c/sqrt(2);\n      P[3][3] = Q[i][j][0]*c/sqrt(2);\n\n      P_i[0][0] = k1t;\n      P_i[0][1] = 0.0;\n      P_i[0][2] = 0.0;\n      P_i[0][3] = -k1t/pow(c,2);\n      P_i[1][0] = 0.0;\n      P_i[1][1] = k2t;\n      P_i[1][2] = -k1t;\n      P_i[1][3] = 0.0;\n      P_i[2][0] = 0.0;\n      P_i[2][1] = k1t/sqrt(2);\n      P_i[2][2] = k2t/sqrt(2);\n      P_i[2][3] = 1./(sqrt(2)*Q[i][j][0]*c);\n      P_i[3][0] = 0.0;\n      P_i[3][1] = -k1t/sqrt(2);\n      P_i[3][2] = -k2t/sqrt(2);\n      P_i[3][3] = 1./(sqrt(2)*Q[i][j][0]*c);\n\n    \tDiag[0][0] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1);\n    \tDiag[1][1] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1);\n    \tDiag[2][2] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1);\n    \tDiag[3][3] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1.*c, 1);\n\n    \tB_p[i][j] = M*(P*Diag*P_i)*M_i;\n\n    \tDiag[0][0] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1);\n    \tDiag[1][1] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1);\n    \tDiag[2][2] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1);\n    \tDiag[3][3] = calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1.*c, -1);\n\n    \tB_m[i][j] = M*(P*Diag*P_i)*M_i;\n\n    \t// F_p[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1));\n     //  F_p[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));\n     //  F_p[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));\n     //  F_p[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, 1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + \n     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, 1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, 1))*pow(c,2))/(2*(gama-1)));\n\n\n     //  F_m[i][j][0] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1));\n     //  F_m[i][j][1] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][1]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][1]/Q[i][j][0]) + c*k1t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][1]/Q[i][j][0]) - c*k1t));\n     //  F_m[i][j][2] = (Q[i][j][0]/(2*gama))*(2*(gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(Q[i][j][2]/Q[i][j][0]) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*((Q[i][j][2]/Q[i][j][0]) + c*k2t) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*((Q[i][j][2]/Q[i][j][0]) - c*k2t));\n     //  F_m[i][j][3] = (Q[i][j][0]/(2*gama))*((gama-1)*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], 0, -1)*(pow(Q[i][j][1]/Q[i][j][0],2) + pow(Q[i][j][2]/Q[i][j][0],2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1)*(pow((Q[i][j][1]/Q[i][j][0] + c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] + c*k2t),2)) + 0.5*calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1)*(pow((Q[i][j][1]/Q[i][j][0] - c*k1t),2) + pow((Q[i][j][2]/Q[i][j][0] - c*k2t),2)) + \n     //                  ((3-gama)*(calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], c, -1) + calcEigValPlusMinus(Q[i][j][2]/Q[i][j][0], -1*c, -1))*pow(c,2))/(2*(gama-1)));\n\n      F_p[i][j] = B_p[i][j]*Q[i][j];\n      F_m[i][j] = B_m[i][j]*Q[i][j];\n\n    break;\n\n    case 2:\n      // E_p = E (pure supersonic flow in u, i.e. Mx > 1)\n\n      E_p[i][j][0] = Q[i][j][1];\n      E_p[i][j][1] = pow(Q[i][j][1], 2)/Q[i][j][0] + calcP(Q,i,j);\n      E_p[i][j][2] = Q[i][j][1]*Q[i][j][2]/Q[i][j][0];\n      E_p[i][j][3] = ((calcP(Q,i,j)/(gama-1) + 0.5*Q[i][j][0]*(pow(Q[i][j][1]/Q[i][j][0], 2) + pow(Q[i][j][2]/Q[i][j][0], 2))) + calcP(Q,i,j))*(Q[i][j][1]/Q[i][j][0]);\n\n      // E_m = 0 (pure supersonic flow in u, i.e. Mx > 1)\n      //\n\n      F_p[i][j][0] = (Q[i][j][0]/(4*c))*pow((Q[i][j][2]/Q[i][j][0] + c), 2);\n      F_p[i][j][1] = F_p[i][j][0]*(Q[i][j][1]/Q[i][j][0]);\n      F_p[i][j][2] = F_p[i][j][0]*(((gama-1)*(Q[i][j][2]/Q[i][j][0]) + 2*c)/gama);\n      F_p[i][j][3] = F_p[i][j][0]*(0.5*pow(Q[i][j][1]/Q[i][j][0], 2) + pow(((gama-1)*(Q[i][j][2]/Q[i][j][0]) + 2*c), 2)/(2*(pow(gama,2) - 1)));\n\n      F_m[i][j][0] = -1.*(Q[i][j][0]/(4*c))*pow((Q[i][j][2]/Q[i][j][0] - c), 2);\n      F_m[i][j][1] = F_m[i][j][0]*(Q[i][j][1]/Q[i][j][0]);\n      F_m[i][j][2] = F_m[i][j][0]*(((gama-1)*(Q[i][j][2]/Q[i][j][0]) - 2*c)/gama);\n      F_m[i][j][3] = F_m[i][j][0]*(0.5*pow(Q[i][j][1]/Q[i][j][0], 2) + pow(((gama-1)*(Q[i][j][2]/Q[i][j][0]) - 2*c), 2)/(2*(pow(gama,2) - 1)));\n    break;\n\n    case 4:\n     E_p[i][j][0] = Q[i][j][1];\n     E_p[i][j][1] = pow(Q[i][j][1],2)/Q[i][j][0] + calcP(Q,i,j);\n     E_p[i][j][2] = Q[i][j][1]*Q[i][j][2]/Q[i][j][0];\n     E_p[i][j][3] = (Q[i][j][3] + calcP(Q,i,j))*(Q[i][j][1]/Q[i][j][0]);\n\n     F_p[i][j][0] = Q[i][j][2];\n     F_p[i][j][1] = Q[i][j][2]*Q[i][j][1]/Q[i][j][0];\n     F_p[i][j][2] = pow(Q[i][j][2], 2)/Q[i][j][0] + calcP(Q,i,j);\n     F_p[i][j][3] = (Q[i][j][3] + calcP(Q,i,j))*(Q[i][j][2]/Q[i][j][0]);\n    break;\n\n  }\n\n}\n\nstd::vector<double> calcNumFlux(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const int direction, const int LR) {\n  double aface, mface_p, mface_m, pface;\n  std::vector<double> ConvFlux_L(4), ConvFlux_R(4), PFlux(4);\n\n  switch(direction) {\n    case 1:\n      switch(LR) {\n        case 1:\n          ConvFlux_L[0] = Q[i][j][0];\n          ConvFlux_L[1] = Q[i][j][1];\n          ConvFlux_L[2] = Q[i][j][2];\n          ConvFlux_L[3] = Q[i][j][3] + calcP(Q,i,j);\n\n          ConvFlux_R[0] = Q[i+1][j][0];\n          ConvFlux_R[1] = Q[i+1][j][1];\n          ConvFlux_R[2] = Q[i+1][j][2];\n          ConvFlux_R[3] = Q[i+1][j][3] + calcP(Q,i+1,j);\n\n          aface = std::min(calcaTildeE(Q, i, j), calcaTildeE(Q, i+1, j));\n          mface_p = 0.5*(calcmFaceE(Q, aface, i, j) + std::abs(calcmFaceE(Q, aface, i, j)));\n          mface_m = 0.5*(calcmFaceE(Q, aface, i, j) - std::abs(calcmFaceE(Q, aface, i, j)));\n          pface = calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i+1][j][1]/Q[i+1][j][0])/aface, -1)*calcP(Q, i+1, j);\n\n          PFlux[1] = pface;\n                    //std::cout << i << \" \" << j << \":\" << \"\\n\" << aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux << \"\\n\";\n\n\n          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;\n        break;\n\n        case -1:\n          ConvFlux_L[0] = Q[i-1][j][0];\n          ConvFlux_L[1] = Q[i-1][j][1];\n          ConvFlux_L[2] = Q[i-1][j][2];\n          ConvFlux_L[3] = Q[i-1][j][3] + calcP(Q,i-1,j);\n\n          ConvFlux_R[0] = Q[i][j][0];\n          ConvFlux_R[1] = Q[i][j][1];\n          ConvFlux_R[2] = Q[i][j][2];\n          ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);\n\n          aface = std::min(calcaTildeE(Q, i-1, j), calcaTildeE(Q, i, j));\n          mface_p = 0.5*(calcmFaceE(Q, aface, i-1, j) + std::abs(calcmFaceE(Q, aface, i-1, j)));\n          mface_m = 0.5*(calcmFaceE(Q, aface, i-1, j) - std::abs(calcmFaceE(Q, aface, i-1, j)));\n          pface = calcPStyle((Q[i-1][j][1]/Q[i-1][j][0])/aface, 1)*calcP(Q, i-1, j) + calcPStyle((Q[i][j][1]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);\n\n          PFlux[1] = pface;\n\n          //std::cout << PFlux << \"\\n\";\n\n          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;\n\n        break;\n      }\n    break;\n\n    case 2:\n      switch(LR) {\n        case 1:\n          ConvFlux_L[0] = Q[i][j][0];\n          ConvFlux_L[1] = Q[i][j][1];\n          ConvFlux_L[2] = Q[i][j][2];\n          ConvFlux_L[3] = Q[i][j][3] + calcP(Q,i,j);\n\n          ConvFlux_R[0] = Q[i][j+1][0];\n          ConvFlux_R[1] = Q[i][j+1][1];\n          ConvFlux_R[2] = Q[i][j+1][2];\n          ConvFlux_R[3] = Q[i][j+1][3] + calcP(Q,i,j+1);\n\n          aface = std::min(calcaTildeF(Q, i, j), calcaTildeF(Q, i, j+1));\n          mface_p = 0.5*(calcmFaceF(Q, aface, i, j) + std::abs(calcmFaceF(Q, aface, i, j)));\n          mface_m = 0.5*(calcmFaceF(Q, aface, i, j) - std::abs(calcmFaceF(Q, aface, i, j)));\n          pface = calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, 1)*calcP(Q, i, j) + calcPStyle((Q[i][j+1][2]/Q[i][j+1][0])/aface, -1)*calcP(Q, i, j+1);\n\n          PFlux[2] = pface;\n\n          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;\n        break;\n\n        case -1:\n          ConvFlux_L[0] = Q[i][j-1][0];\n          ConvFlux_L[1] = Q[i][j-1][1];\n          ConvFlux_L[2] = Q[i][j-1][2];\n          ConvFlux_L[3] = Q[i][j-1][3] + calcP(Q,i,j-1);\n\n          ConvFlux_R[0] = Q[i][j][0];\n          ConvFlux_R[1] = Q[i][j][1];\n          ConvFlux_R[2] = Q[i][j][2];\n          ConvFlux_R[3] = Q[i][j][3] + calcP(Q,i,j);\n\n          aface = std::min(calcaTildeF(Q, i, j-1), calcaTildeF(Q, i, j));\n          mface_p = 0.5*(calcmFaceF(Q, aface, i, j-1) + std::abs(calcmFaceF(Q, aface, i, j-1)));\n          mface_m = 0.5*(calcmFaceF(Q, aface, i, j-1) - std::abs(calcmFaceF(Q, aface, i, j-1)));\n          pface = calcPStyle((Q[i][j-1][2]/Q[i][j-1][0])/aface, 1)*calcP(Q, i, j-1) + calcPStyle((Q[i][j][2]/Q[i][j][0])/aface, -1)*calcP(Q, i, j);\n\n          PFlux[2] = pface;\n\n          return aface*(mface_p*ConvFlux_L + mface_m*ConvFlux_R) + PFlux;\n        break;\n      }\n    break;\n  }\n}\n\ndouble calcGamma(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const int dir) {\n  switch(dir) {\n    case 1:\n    if (i == 0) {\n      return std::abs(calcP(Q, i+1, j) - 2*calcP(Q, i, j) + calcP(Q, i, j))/std::abs(calcP(Q, i+1, j) + 2*calcP(Q, i, j) + calcP(Q, i, j));\n    } else if (i == mesh.xsize()-1) {\n        return std::abs(calcP(Q, i, j) - 2*calcP(Q, i, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i, j) + calcP(Q, i-1, j));\n    } else {\n        return std::abs(calcP(Q, i+1, j) - 2*calcP(Q, i, j) + calcP(Q, i-1, j))/std::abs(calcP(Q, i+1, j) + 2*calcP(Q, i, j) + calcP(Q, i-1, j));\n    }\n    break;\n\n    case 2:\n      if (j == 0) {\n        return std::abs(calcP(Q, i, j+1) - 2*calcP(Q, i, j))/std::abs(calcP(Q, i, j+1) + 2*calcP(Q, i, j));\n      } else if (j == mesh.ysize()-1) {\n          return std::abs(calcP(Q, i, j) - 2*calcP(Q, i, j) + calcP(Q, i, j-1))/std::abs(calcP(Q, i, j) + 2*calcP(Q, i, j) + calcP(Q, i, j-1));\n      } else {\n          return std::abs(calcP(Q, i, j+1) - 2*calcP(Q, i, j) + calcP(Q, i, j-1))/std::abs(calcP(Q, i, j+1) + 2*calcP(Q, i, j) + calcP(Q, i, j-1));\n        }\n    break;\n\n    default:\n      return 0.0;\n    break;\n  }\n}\n\ndouble calcSigma(Matrix<Vector<double> > &Q, const size_t i, const size_t j, const int dir) {\n  double ss = sqrt(gama*calcP(Q, i, j)/Q[i][j][0]);\n\n  switch(dir) {\n    case 0:\n      return std::abs(Q[i][j][1]/Q[i][j][0]) + std::abs(Q[i][j][2]/Q[i][j][0]) + 2*ss;\n    break;\n\n    case 1:\n      return std::abs(Q[i][j][1]/Q[i][j][0]) + ss;\n    break;\n\n    case 2:\n      return std::abs(Q[i][j][2]/Q[i][j][0]) + ss;\n    break;\n  }\n}\n\nvoid calcAD(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &AD_x, Matrix<Vector<double> > &AD_y, Matrix<double> &dt, const size_t i, const size_t j, const int adtype) {\n\n  switch(adtype) {\n    case 1:\n      if (i == 1) {\n        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 5*Q[i][j] - 2*Q[i-1][j]);\n      } else if (i == mesh.xsize()-2) {\n        AD_x[i][j] = -eps_e*dt[i][j]*(-2*Q[i+1][j] + 5*Q[i][j] - 4*Q[i-1][j] + Q[i-2][j]);\n      } else {\n        AD_x[i][j] = -eps_e*dt[i][j]*(Q[i+2][j] - 4*Q[i+1][j] + 6*Q[i][j] - 4*Q[i-1][j] + Q[i-2][j]);  \n      }\n      \n      if (j == 1) {\n        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 5*Q[i][j] - 2*Q[i][j-1]);\n      } else if (j == mesh.ysize()-2) { \n        AD_y[i][j] = -eps_e*dt[i][j]*(-2*Q[i][j+1] + 5*Q[i][j] - 4*Q[i][j-1] + Q[i][j-2]);\n      } else {\n        AD_y[i][j] = -eps_e*dt[i][j]*(Q[i][j+2] - 4*Q[i][j+1] + 6*Q[i][j] - 4*Q[i][j-1] + Q[i][j-2]);\n      }\n    break;\n\n    case 2:\n      AD_x[i][j] = (calcSigma(Q, i+1, j) + calcSigma(Q, i, j))*()\n    break;\n\n    case 3:\n\n    break;\n\n    default:\n      std::cout << \"Unknown artificial dissipation type. Please double check.\" << std::endl;\n      exit(-1);\n    break;\n  }\n}\n\nvoid calcRES(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, Matrix<Vector<double> > &E_p, Matrix<Vector<double> > &E_m, Matrix<Vector<double> > &F_p, Matrix<Vector<double> > &F_m, Matrix<Matrix<double> > &A_p, Matrix<Matrix<double> > &A_m, Matrix<Matrix<double> > &B_p, Matrix<Matrix<double> > &B_m, Matrix<Vector<double> > &AD_x, Matrix<Vector<double> > &AD_y, Matrix<double> &dt, const size_t i, const size_t j) {\n  switch(ss_order) {\n    case 1:\n      switch(method) {\n        case 1:\n        case 2:\n\t        RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));\n        break;\n\n        case 3:\n          RES[i][j] = -dt[i][j]*((1./dx)*(calcNumFlux(Q, i, j, 1, 1) - calcNumFlux(Q, i, j, 1, -1)) + (1./dy)*(calcNumFlux(Q, i, j, 2, 1) - calcNumFlux(Q, i, j, 2, -1)));\n        break;\n\n        case 4:\n          std::cout << \"First-order steady-state not implemented for centered scheme. Please choose second-order.\" << std::endl;\n          exit(-1);\n        break;\n      }\n    break;\n\n    case 2:\n      switch(method) {\n        case 1:\n        case 2:\n          if (i == 1) {\n            if (j == 1) {\n              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            } else if (j == mesh.ysize()-2) {\n              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));\n            } else {\n              RES[i][j] = -dt[i][j]*((1./dx)*(E_p[i][j] - E_p[i-1][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            }\n          } else if (i == mesh.xsize()-2) {\n            if (j == 1) {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            } else if (j == mesh.ysize()-2) {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));\n            } else {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./dx)*(E_m[i+1][j] - E_m[i][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            }\n          } else {\n            if (j == 1) {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./dy)*(F_p[i][j] - F_p[i][j-1]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            } else if (j == mesh.ysize()-2) {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./dy)*(F_m[i][j+1] - F_m[i][j]));\n            } else {\n              RES[i][j] = -dt[i][j]*((1./(2*dx))*(3*E_p[i][j] - 4*E_p[i-1][j] + E_p[i-2][j]) + (1./(2*dx))*(-3*E_m[i][j] + 4*E_m[i+1][j] - E_m[i+2][j]) + (1./(2*dy))*(3*F_p[i][j] - 4*F_p[i][j-1] + F_p[i][j-2]) + (1./(2*dy))*(-3*F_m[i][j] + 4*F_m[i][j+1] - F_m[i][j+2]));\n            }\n          }\n        break;\n\n        case 3:\n          std::cout << \"Second-order AUSM+ is not implemented. Please change method or order.\" << std::endl;\n          exit(-1);\n        break;\n\n        case 4:\n          RES[i][j] = -dt[i][j]*((1./(2*dx))*(E_p[i+1][j] - E_p[i-1][j]) + (1./(2*dy))*(F_p[i][j+1] - F_p[i][j-1])) + AD_x[i][j] + AD_y[i][j];\n        break;\n      }\n    break;\n\n    default:\n      std::cout << \"Invalid steady-state order. Please double check.\" << std::endl;\n      exit(-1);\n    break;\n  }\n}\n\ndouble ExactSol::findTheta(double M, double beta) {\n\tstatic double theta = 0.1;\n\tdouble num = (gama-1)*pow(M,2)*pow(sin(beta),2) + 2;\n\tdouble den = (gama+1)*pow(M,2)*pow(sin(beta),2);\n\tdouble lhs = tan(beta-theta);\n\tdouble rhs = num*tan(beta)/den;\n\tif (std::abs(lhs-rhs) > 0.00001) {\n    if ((lhs-rhs) > 0) {\n      theta = theta + (theta/100);\n    } else {\n      theta = theta - (theta/100);\n    }\n    findTheta(M, beta);\n  }\n\treturn theta;\t\n}\n\ndouble ExactSol::findBeta(double M, double theta) {\n\tstatic double beta = 0.1;\n\tdouble num = (gama-1)*pow(M,2)*pow(sin(beta),2) + 2;\n\tdouble den = (gama+1)*pow(M,2)*pow(sin(beta),2);\n\tdouble lhs = tan(beta-theta)/tan(beta);\n\tdouble rhs = num/den;\n\tif (std::abs(lhs - rhs) > 0.00001) {\n    if ((lhs-rhs) > 0) {\n      beta = beta - (beta/100);\n    } else {\n      beta = beta + (beta/100);\n    }\n    findBeta(M, theta);\n  }\n\treturn beta;\t\n}\n\ndouble ExactSol::calc_postM(double M, double beta, double theta) {\n\tdouble num = 1 + ((gama-1)/2)*pow(M,2)*pow(sin(beta),2);\n\tdouble den = (gama*pow(M,2)*pow(sin(beta),2) - (gama-1)/2)*pow(sin(beta-theta),2);\n\treturn sqrt(num/den);\n}\n\ndouble ExactSol::calc_rhoRatio(double M, double beta) {\n\tdouble num = (gama+1)*pow(M,2)*pow(sin(beta),2);\n\tdouble den = (gama-1)*pow(M,2)*pow(sin(beta),2) + 2;\n\treturn num/den;\n}\n\ndouble ExactSol::calc_pRatio(double M, double beta) {\n\tdouble mult = (2*gama)/(gama+1);\n\tdouble par = pow(M,2)*pow(sin(beta),2) - 1;\n\treturn mult*par + 1;\n}\n\ndouble ExactSol::calc_TRatio(double M, double beta) {\n\tdouble mult1 = (2*(gama-1))/pow(gama+1,2);\n\tdouble mult2_num = pow(M,2)*pow(sin(beta),2) - 1;\n\tdouble mult2_den = pow(M,2)*pow(sin(beta),2);\n\tdouble mult2 = mult2_num/mult2_den;\n\tdouble par = gama*pow(M,2)*pow(sin(beta),2) + 1;\n\treturn 1.0 + mult1 * mult2 * par;\n}\n\nvoid ExactSol::calc_all() {\n\tTheta = findTheta(M1, beta1);\n\tMach2 = calc_postM(M1, beta1, Theta);\n\tP2 = p1*calc_pRatio(M1, beta1);\n\tRho2 = rho1*calc_rhoRatio(M1, beta1);\n\tTemp2 = T1*calc_TRatio(M1, beta1);\n\tBeta2 = findBeta(Mach2, Theta);\n\tBetaPrime = Beta2 - Theta;\n\tMach3 = calc_postM(Mach2, Beta2, Theta);\n\tRho3 = Rho2*calc_rhoRatio(Mach2, Beta2);\n\tP3 = P2*calc_pRatio(Mach2, Beta2);\n\tTemp3 = Temp2*calc_TRatio(Mach2, Beta2);\n}\n\nvoid writeResult(Matrix<Vector<double> > &Q, Matrix<Vector<double> > &RES, std::string fName) {\n\tstd::ofstream wFile;\n  wFile.open(fName);\n  wFile.precision(6);\n  wFile << std::scientific;\n  wFile << \"# vtk DataFile Version 3.0\" << \"\\n\"\n        << \"Resultado Projeto 3\" << \"\\n\"\n        << \"ASCII\" << \"\\n\"\n        << \"DATASET STRUCTURED_GRID\" << \"\\n\"\n        << \"DIMENSIONS \" << mesh.xsize() << \" \" << mesh.ysize() << \" \" << mesh.zsize() << \" \" << \"\\n\"\n        << \"POINTS \" << mesh.xsize()*mesh.ysize()*mesh.zsize() << \" double\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n    for (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n      for (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n        wFile << mesh.x(i,j,k) << \" \" << mesh.y(i,j,k) << \" \" << mesh.z(i,j,k) << \"\\n\";\n      }\n    }\n  }\n  wFile << \"POINT_DATA \" << mesh.xsize()*mesh.ysize()*mesh.zsize() << \"\\n\";\n#ifdef MESHDEBUG  \n  wFile << \"SCALARS Jacob double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << mesh.J(i,j,k) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS xi_x double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << mesh.xi_x(i,j,k) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS xi_y double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << mesh.xi_y(i,j,k) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS eta_x double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << mesh.eta_x(i,j,k) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS eta_y double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << mesh.eta_y(i,j,k) << \"\\n\";\n  \t\t}\n  \t}\n  }\n#endif\n#ifdef NUMDEBUG\n  wFile << \"SCALARS RES_Cont double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << RES[i][j][0] << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS RES_X-Momentum double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << RES[i][j][1] << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS RES_Y-Momentum double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << RES[i][j][2] << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS RES_Energy double\" << \"\\n\"\n  << \"LOOKUP_TABLE default\" << \"\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << RES[i][j][3] << \"\\n\";\n  \t\t}\n  \t}\n  }\n#endif\n\n  wFile << \"SCALARS Rho double\\n\"\n  \t\t\t<< \"LOOKUP_TABLE default\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << Q[i][j][0] << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS Energy double\\n\"\n  \t\t\t<< \"LOOKUP_TABLE default\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << Q[i][j][3] << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS Pressure double\\n\"\n  \t\t\t<< \"LOOKUP_TABLE default\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << calcP(Q,i,j) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"SCALARS Temperature double\\n\"\n  \t\t\t<< \"LOOKUP_TABLE default\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << calcT(Q,i,j) << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"VECTORS Velocity double\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << Q[i][j][1]/Q[i][j][0] << \" \" << Q[i][j][2]/Q[i][j][0] << \" 0\" << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << \"VECTORS Mach double\\n\";\n  for (Mesh::mesh_index k = 0; k != mesh.zsize(); ++k) {\n  \tfor (Mesh::mesh_index j = 0; j != mesh.ysize(); ++j) {\n  \t\tfor (Mesh::mesh_index i = 0; i != mesh.xsize(); ++i) {\n  \t\t\twFile << (Q[i][j][1]/Q[i][j][0])/sqrt(gama*calcP(Q,i,j)/Q[i][j][0]) << \" \" << (Q[i][j][2]/Q[i][j][0])/sqrt(gama*calcP(Q,i,j)/Q[i][j][0]) << \" 0\" << \"\\n\";\n  \t\t}\n  \t}\n  }\n  wFile << std::flush;\n  wFile.close();\n}\n\ndouble calcLinfRes(Matrix<Vector<double> > &RES, const size_t comp) {\n  double max_res = std::abs(RES[1][1][comp]);\n  for (size_t i = 1; i != mesh.xsize()-1; ++i) {\n    for (size_t j = 1; j != mesh.ysize()-1; ++j) {\n      if (std::abs(RES[i][j][comp]) > max_res)\n        max_res = std::abs(RES[i][j][comp]);\n    }\n  }\n  return max_res;\n}\n\nint checkConvCrash(Matrix<Vector<double> > &RES) {\n  if (std::isnan(calcLinfRes(RES,0)) || std::isnan(calcLinfRes(RES,1)) || std::isnan(calcLinfRes(RES,2)) || std::isnan(calcLinfRes(RES,3)) ||\n      std::isinf(calcLinfRes(RES,0)) || std::isinf(calcLinfRes(RES,1)) || std::isinf(calcLinfRes(RES,2)) || std::isinf(calcLinfRes(RES,3)))\n    return -1;\n  else if (std::max(std::max(std::max(calcLinfRes(RES,0)/norm_cont, calcLinfRes(RES,1)/norm_xm), calcLinfRes(RES,2)/norm_ym), calcLinfRes(RES,3)/norm_en) < pow(10, -Conv))\n    return 1;\n\n  return 0;\n}\n\nvoid writeResidual(Matrix<Vector<double> > &RES, const int n) {\n  static int cnt = 0;\n  std::ofstream wFile;\n  if (!cnt++) {\n    norm_cont = calcLinfRes(RES,0);\n    norm_xm = calcLinfRes(RES,1);\n    norm_ym = calcLinfRes(RES,2);\n    norm_en = calcLinfRes(RES,3);\n    wFile.open(\"plots/RES.data\");\n    if (!wFile.is_open()) {\n      std::cout << \"Error opening residual file\" << std::endl;\n      exit(-1);\n    }\n    wFile.precision(6);\n    wFile << \"#n\\tContinuity\\tX-Momentum\\tY-Momentum\\tEnergy\\n\"\n          << n << \"\\t\\t\" << log10(calcLinfRes(RES, 0)/norm_cont) << \"\\t\\t\" << log10(calcLinfRes(RES, 1)/norm_xm) << \"\\t\\t\" << log10(calcLinfRes(RES, 2)/norm_ym) << \"\\t\\t\" << log10(calcLinfRes(RES, 3)/norm_en) << \"\\n\";\n  } else {\n    wFile.open(\"plots/RES.data\", std::ofstream::app);\n    if (!wFile.is_open()) {\n      std::cout << \"Error opening residual file\" << std::endl;\n      exit(-1);\n    }\n    wFile << n << \"\\t\\t\" << log10(calcLinfRes(RES, 0)/norm_cont) << \"\\t\\t\" << log10(calcLinfRes(RES, 1)/norm_xm) << \"\\t\\t\" << log10(calcLinfRes(RES, 2)/norm_ym) << \"\\t\\t\" << log10(calcLinfRes(RES, 3)/norm_en) << \"\\n\";\n  }\n  wFile.close();\n}\n\nvoid calcSWLU(Matrix<Vector<double> > &dQstar, Matrix<Vector<double> > &dQ, Matrix<Vector<double> > &RES, Matrix<Matrix<double> > &A, Matrix<Matrix<double> > &B, Matrix<double> &dt, const size_t &j, const int &step) {\n  static int cnt = 0;\n  static Matrix<double> I(4);\n\n  if (!cnt++) {\n    for (auto &v : I)\n      v.resize(4);\n\n    for (size_t i = 0; i != 4; ++i) {\n      I[i][i] = 1.0;\n    }\n  }\n\n  switch(imp_treat) {\n    case 0:\n      switch(step) {\n        case 1:\n              if (j == 1) {\n                dQstar[0][j-1] = Gauss((I + (1./dx)*dt[1][j]*A[1][j] + (1./dy)*dt[1][j]*B[1][j]), RES[1][j]);\n                for (size_t i = 2; i != mesh.xsize()-1; ++i) {\n                  dQstar[i-1][j-1] = Gauss((I + (1./dx)*dt[i][j]*A[i][j] + (1./dy)*dt[i][j]*B[i][j]), (RES[i][j] + (1./dx)*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1]));\n                }\n              } else {\n                dQstar[0][j-1] = Gauss((I + (1./dx)*dt[1][j]*A[1][j] + (1./dy)*dt[1][j]*B[1][j]), (RES[1][j] + (1./dy)*dt[1][j]*B[1][j-1]*dQstar[0][j-2]));\n                for (size_t i = 2; i != mesh.xsize()-1; ++i) {\n                  dQstar[i-1][j-1] = Gauss((I + (1./dx)*dt[i][j]*A[i][j] + (1./dy)*dt[i][j]*B[i][j]), (RES[i][j] + (1./dy)*dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] + (1./dx)*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1]));\n                }\n              }\n        break;\n\n        case 2:\n          if (j == mesh.ysize()-2) {\n            dQ[j-1][mesh.xsize()-3] = Gauss((I - (1./dx)*dt[mesh.xsize()-2][j]*A[mesh.xsize()-2][j] - (1./dy)*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j]), dQstar[mesh.xsize()-3][j-1]);\n            for (size_t i = mesh.xsize()-2; i-- > 1;) {\n              dQ[j-1][i-1] = Gauss((I - (1./dx)*dt[i][j]*A[i][j] - (1./dy)*dt[i][j]*B[i][j]), (dQstar[i-1][j-1] - (1./dx)*dt[i][j]*A[i+1][j]*dQ[j-1][i]));\n            }\n          } else {\n            dQ[j-1][mesh.xsize()-3] = Gauss((I - (1./dx)*dt[mesh.xsize()-2][j]*A[mesh.xsize()-2][j] - (1./dy)*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - (1./dy)*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3]));\n            for (size_t i = mesh.xsize()-2; i-- > 1;) {\n              dQ[j-1][i-1] = Gauss((I - (1./dx)*dt[i][j]*A[i][j] - (1./dy)*dt[i][j]*B[i][j]), (dQstar[i-1][j-1] - (1./dx)*dt[i][j]*A[i+1][j]*dQ[j-1][i] - (1./dy)*dt[i][j]*B[i][j+1]*dQ[j][i-1]));\n            }\n          }\n        break;\n      }\n    break;\n\n    case 1:\n      switch(step) {\n        case 1:\n          if (j == 1) {\n            dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), RES[1][j]);\n            dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.0*dt[2][j]*A[1][j]*dQstar[0][j-1]));\n            for (size_t i = 3; i != mesh.xsize()-1; ++i) {\n              dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2)*A[i-2][j]*dQstar[i-3][j-1]));\n            }\n          } else if (j == 2) {\n            dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), (RES[1][j] + 2.*dt[1][j]*B[1][j-1]*dQstar[0][j-2]));\n            dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.*dt[2][j]*B[2][j-1]*dQstar[1][j-2] + 2.0*dt[2][j]*A[1][j]*dQstar[0][j-1]));\n            for (size_t i = 3; i != mesh.xsize()-1; ++i) {\n              dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2.)*A[i-2][j]*dQstar[i-3][j-1]));\n            }\n          } else {\n              dQstar[0][j-1] = Gauss((I + (3.*dt[1][j]/2.)*A[1][j] + (3.*dt[1][j]/2.)*B[1][j]), (RES[1][j] + 2.*dt[1][j]*B[1][j-1]*dQstar[0][j-2] - (dt[1][j]/2.)*B[1][j-2]*dQstar[0][j-3]));\n              dQstar[1][j-1] = Gauss((I + (3.*dt[2][j]/2.)*A[2][j] + (3.*dt[2][j]/2.)*B[2][j]), (RES[2][j] + 2.*dt[2][j]*B[2][j-1]*dQstar[1][j-2] - (dt[2][j]/2.)*B[2][j-2]*dQstar[1][j-3] + 2*dt[2][j]*A[1][j]*dQstar[0][j-1]));\n              for (size_t i = 3; i != mesh.xsize()-1; ++i) {\n                dQstar[i-1][j-1] = Gauss((I + (3.*dt[i][j]/2.)*A[i][j] + (3.*dt[i][j]/2.)*B[i][j]), (RES[i][j] + 2.*dt[i][j]*B[i][j-1]*dQstar[i-1][j-2] - (dt[i][j]/2.)*B[i][j-2]*dQstar[i-1][j-3] + 2.*dt[i][j]*A[i-1][j]*dQstar[i-2][j-1] - (dt[i][j]/2.)*A[i-2][j]*dQstar[i-3][j-1]));\n              }\n          }\n        break;\n\n        case 2:\n          if (j == mesh.ysize()-2) {\n            dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), dQstar[mesh.xsize()-3][j-1]);\n            dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));\n            for (size_t i = mesh.xsize()-3; i-- > 1;) {\n              dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));\n            }\n          } else if (j == mesh.ysize()-3) {\n              dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - 2*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3]));\n              dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*B[mesh.xsize()-3][j+1]*dQ[j][mesh.xsize()-4] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));\n              for (size_t i = mesh.xsize()-3; i-- > 1;) {\n                dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*B[i][j+1]*dQ[j][i-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));\n              }\n          } else {\n            dQ[j-1][mesh.xsize()-3] = Gauss((I - (3.*dt[mesh.xsize()-2][j]/2.)*A[mesh.xsize()-2][j] - (3.*dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j]), (dQstar[mesh.xsize()-3][j-1] - 2*dt[mesh.xsize()-2][j]*B[mesh.xsize()-2][j+1]*dQ[j][mesh.xsize()-3] + (dt[mesh.xsize()-2][j]/2.)*B[mesh.xsize()-2][j+2]*dQ[j+1][mesh.xsize()-3]));\n            dQ[j-1][mesh.xsize()-4] = Gauss((I - (3.*dt[mesh.xsize()-3][j]/2.)*A[mesh.xsize()-3][j] - (3.*dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j]), (dQstar[mesh.xsize()-4][j-1] - 2*dt[mesh.xsize()-3][j]*B[mesh.xsize()-3][j+1]*dQ[j][mesh.xsize()-4] + (dt[mesh.xsize()-3][j]/2.)*B[mesh.xsize()-3][j+2]*dQ[j+1][mesh.xsize()-4] - 2*dt[mesh.xsize()-3][j]*A[mesh.xsize()-2][j]*dQ[j-1][mesh.xsize()-3]));\n            for (size_t i = mesh.xsize()-3; i-- > 1;) {\n              dQ[j-1][i-1] = Gauss((I - (3.*dt[i][j]/2.)*A[i][j] - (3.*dt[i][j]/2.)*B[i][j]), (dQstar[i-1][j-1] - 2*dt[i][j]*B[i][j+1]*dQ[j][i-1] + (dt[i][j]/2.)*B[i][j+2]*dQ[j+1][i-1] - 2*dt[i][j]*A[i+1][j]*dQ[j-1][i] + (dt[i][j]/2.)*A[i+2][j]*dQ[j-1][i+1]));\n            }\n          }\n        break;\n      }\n    break;\n  }\n}",
+			"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/src/p3src.cpp",
+			"file_size": 44362,
+			"file_write_time": 131971495103571837,
 			"settings":
 			{
-				"buffer_size": 7020,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "inc/p3Header.h",
-			"settings":
-			{
-				"buffer_size": 6802,
+				"buffer_size": 44427,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -79,19 +85,9 @@
 			"file": "src/p3src.cpp",
 			"settings":
 			{
-				"buffer_size": 40804,
+				"buffer_size": 54189,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "solver/Projeto3/test.cpp",
-			"settings":
-			{
-				"buffer_size": 334,
-				"encoding": "UTF-8",
-				"line_ending": "Unix",
-				"name": "#include <iostream>"
 			}
 		}
 	],
@@ -170,34 +166,44 @@
 	],
 	"file_history":
 	[
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/p3src.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/LinearSysSolvers.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/linearsyssolvers.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/config",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/p3.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/Operators.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/test.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/numerics.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/Numerics.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/mecflu.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/MecFlu.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/FlowSolver.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/flowSolver.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/inc/Mesh.h",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/src/mesh.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/aa.cpp",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/flow",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/numerics",
-		"/home/eron/Workspace/C++/CC-298/cc-298-project3/solver/Projeto3/test.cpp",
-		"/home/eron/workspace/c++/SolverProject/inc/Aux.h",
-		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/numerics",
-		"/home/eron/workspace/c++/SolverProject/inc/json.hpp",
-		"/home/eron/workspace/c++/SolverProject/inc/Numerics.h",
+		"/home/eron/workspace/c++/SolverProject/inc/p3Header.h",
+		"/home/eron/workspace/c++/SolverProject/src/p3src.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/p3.cpp",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/src/p3src.cpp",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto2/p-s.cpp",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto2/param.cfg",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto2/lss.h",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto2/aux.h",
+		"/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto2/fvc.h",
+		"/home/eron/workspace/c++/CC-298/Projeto2/aux.h",
+		"/home/eron/workspace/c++/CC-298/Projeto2/fvc.h",
+		"/home/eron/workspace/c++/CC-298/Projeto2/param.cfg",
+		"/home/eron/workspace/c++/CC-298/Projeto2/p-s.cpp",
+		"/home/eron/workspace/c++/CC-298/Projeto2/p-s",
+		"/home/eron/workspace/c++/cc-298-project2/aux.h",
+		"/home/eron/workspace/c++/cc-298-project2/fvc.h",
+		"/home/eron/workspace/c++/SolverProject/inc/Operators.h",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/config",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/test.cpp",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolvers.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/LinearSysSolvers.h",
+		"/home/eron/workspace/c++/SolverProject/src/mesh.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/Mesh.h",
+		"/home/eron/workspace/c++/cc-298-project2/p-s.cpp",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolver.cpp",
+		"/home/eron/workspace/c++/SolverProject/src/linearsyssolver\\.cpp",
 		"/home/eron/workspace/c++/SolverProject/src/numerics.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/Numerics.h",
+		"/home/eron/workspace/c++/SolverProject/src/mecflu.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/MecFlu.h",
 		"/home/eron/workspace/c++/SolverProject/inc/FlowSolver.h",
 		"/home/eron/workspace/c++/SolverProject/src/flowSolver.cpp",
-		"/home/eron/workspace/c++/SolverProject/inc/Mesh.h",
-		"/home/eron/workspace/c++/SolverProject/src/mesh.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/aa.cpp",
+		"/home/eron/workspace/c++/SolverProject/inc/test.cpp",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/flow",
+		"/home/eron/workspace/c++/SolverProject/solver/Projeto3/numerics",
+		"/home/eron/workspace/c++/SolverProject/inc/Aux.h",
+		"/home/eron/workspace/c++/SolverProject/inc/json.hpp",
 		"/home/eron/workspace/c++/SolverProject/inc/numerics.json",
 		"/home/eron/workspace/c++/SolverProject/inc/numerics",
 		"/home/eron/workspace/c++/SolverProject/inc/Bulk.h",
@@ -205,14 +211,11 @@
 		"/home/eron/workspace/c++/SolverProject/solver.sublime-project",
 		"/home/eron/workspace/c++/SolverProject/mesh_gen.cpp",
 		"/home/eron/workspace/c++/SolverProject/Mesh.h",
-		"/home/eron/workspace/c++/cc-298-project2/aux.h",
 		"/home/eron/workspace/c++/cc-298-project2/wall_time.h",
-		"/home/eron/workspace/c++/cc-298-project2/fvc.h",
 		"/home/eron/workspace/c++/cc-298-project2/preproc.h",
 		"/home/eron/workspace/c++/cc-298-project2/dd.h",
 		"/home/eron/workspace/c++/cc-298-project2/lss.h",
 		"/home/eron/workspace/c++/cc-298-project2/param.cfg",
-		"/home/eron/workspace/c++/cc-298-project2/p-s.cpp",
 		"/home/eron/.config/sublime-text-3/Packages/PackageResourceViewer/README.md",
 		"/home/eron/.config/sublime-text-3/Packages/Theme - Default/Default.sublime-theme",
 		"/home/eron/.config/sublime-text-3/Packages/Theme - Default/Widget - Default.hidden-color-scheme",
@@ -247,18 +250,47 @@
 		"case_sensitive": false,
 		"find_history":
 		[
-			"*Rg",
-			"Rg*",
-			"*Rg",
-			"Rg*",
-			"Rg",
-			"T",
-			"case -1",
+			"a_s",
+			"gamma",
+			"sigma",
+			"max(",
+			"abs(",
+			"calcSigmaIso",
+			"Q[i][j-1]",
 			"ref",
+			"max",
+			"scientific",
+			"ofstream",
+			"endl",
+			"cout",
+			"endl",
+			"cout",
+			"vector <",
+			"vector<",
+			"max(",
+			"scientific",
+			"endl",
+			"endll",
+			"end",
+			"cout",
+			"string",
+			"ofstream",
+			"ifstream",
+			"vector<",
+			"T>",
+			"vector<T>",
+			"JMAX",
+			"IMAX",
+			"vector<",
+			"B_hat[",
+			"A_hat[",
+			"dQ_[",
+			"Q[",
+			"<P>",
+			"(2*dx)",
+			"calcEigValPlusMinus(Q[i][j][1]",
+			"std::cout",
 			"Rnon",
-			"T1",
-			"273",
-			"ConvFlux_R",
 			"ifst",
 			"FullLHS",
 			"T",
@@ -271,6 +303,38 @@
 		"regex": false,
 		"replace_history":
 		[
+			"std::max(",
+			"std::abs(",
+			"calcSigmaAniso",
+			"std::max",
+			"std::scientific",
+			"std::ofstream",
+			"std::endl",
+			"std::cout",
+			"std::endl",
+			"std::cout",
+			"std::vector<",
+			"std::max(",
+			"std::scientific",
+			"std::endl",
+			"endl",
+			"std::endl",
+			"std::cout",
+			"std::string",
+			"std::ofstream",
+			"std::ifstream",
+			"std::vector<",
+			"double>",
+			"vector<double>",
+			"mesh.ysize()",
+			"mesh.xsize()",
+			"std::vector<",
+			"B[",
+			"A[",
+			"dQ[",
+			"<double>",
+			"(dx*dx)",
+			"calcEigValPlusMinus(Q[i][j][2]",
 			"FullRHS"
 		],
 		"reverse": false,
@@ -282,88 +346,59 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "solver/Projeto3/p3.cpp",
+					"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/solver/Projeto3/p3.cpp",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6577,
+						"buffer_size": 6542,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								5356,
+								5356
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
+							"apply_syntax_touched": true,
+							"syntax": "Packages/C++/C++.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1530.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
-					"file": "solver/Projeto3/config",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 433,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								159,
-								159
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"translate_tabs_to_spaces": false
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 2244.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 4,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "inc/Operators.h",
+					"buffer": 1,
+					"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/solver/Projeto3/config",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 7020,
+						"buffer_size": 507,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								128,
-								128
+								315,
+								315
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
+							"apply_syntax_touched": true,
+							"syntax": "Packages/Text/Plain text.tmLanguage",
 							"translate_tabs_to_spaces": false
 						},
 						"translation.x": 0.0,
@@ -380,32 +415,62 @@
 			"sheets":
 			[
 				{
-					"buffer": 3,
-					"file": "inc/p3Header.h",
+					"buffer": 2,
+					"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/inc/p3Header.h",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6802,
+						"buffer_size": 7479,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2804,
-								2804
+								1580,
+								1580
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
-							"translate_tabs_to_spaces": false
+							"apply_syntax_touched": true,
+							"syntax": "Packages/C++/C++.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 727.0,
+						"translation.y": 765.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/media/eron/Expansion Drive/ERON/Estudos/CFD/CC-298/CC-298/Projeto3/src/p3src.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 44427,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								22682,
+								22682
+							]
+						],
+						"settings":
+						{
+							"apply_syntax_touched": true,
+							"history_list_is_closing": true,
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 7905.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
@@ -414,57 +479,27 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 40804,
+						"buffer_size": 54189,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								16857,
-								16857
+								21527,
+								21527
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/C++/C++.sublime-syntax",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 5499.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 1,
-					"type": "text"
-				},
-				{
-					"buffer": 5,
-					"file": "solver/Projeto3/test.cpp",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 334,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								319,
-								319
-							]
-						],
-						"settings":
-						{
-							"auto_name": "#include <iostream>",
+							"apply_syntax_touched": true,
 							"syntax": "Packages/C++/C++.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 7293.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
@@ -498,7 +533,7 @@
 		"cols":
 		[
 			0.0,
-			0.398567708333,
+			0.473437499999,
 			1.0
 		],
 		"rows":
@@ -550,7 +585,7 @@
 		],
 		"width": 0.0
 	},
-	"selected_group": 0,
+	"selected_group": 1,
 	"settings":
 	{
 	},
